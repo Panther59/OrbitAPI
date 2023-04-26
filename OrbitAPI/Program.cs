@@ -72,25 +72,6 @@ try
 
 	});
 
-	//builder.Services.AddAuthentication(options =>
-	//{
-	//	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-	//	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-	//	options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-	//}).AddJwtBearer(o =>
-	//{
-	//	o.TokenValidationParameters = new TokenValidationParameters
-	//	{
-	//		ValidIssuer = configuration["Jwt:Issuer"],
-	//		ValidAudience = configuration["Jwt:Audience"],
-	//		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
-	//		ValidateIssuer = true,
-	//		ValidateAudience = true,
-	//		ValidateLifetime = false,
-	//		ValidateIssuerSigningKey = true
-	//	};
-	//});
-
 	builder.Services.AddAuthorization(options =>
 	{
 		options.AddPolicy(AuthorizationPolicies.Admin.ToString(), policy => policy.RequireRole("Admin"));

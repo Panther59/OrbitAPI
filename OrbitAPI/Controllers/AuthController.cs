@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Orbit.Core.DataAccess;
+using Orbit.Core.Exceptions;
 using Orbit.Models.DTOs;
 using Orbit.Models.OrbitDB;
 using Orbit.Models.Settings;
@@ -31,7 +32,7 @@ namespace OrbitAPI.Controllers
 		}
 
 		[HttpPost("LoginWithGoogle")]
-		public async Task<IActionResult> LoginWithGoogle(RegisterRequest credential)
+		public async Task<dynamic> LoginWithGoogle(RegisterRequest credential)
 		{
 			User? user = null;
 			if (!string.IsNullOrEmpty(credential.GoogleToken) || !Debugger.IsAttached)
@@ -53,11 +54,11 @@ namespace OrbitAPI.Controllers
 
 			if (user != null)
 			{
-				return Ok(JWTGenerator(user));
+				return JWTGenerator(user);
 			}
 			else
 			{
-				return BadRequest();
+				throw new BadRequestException("Your account doesn't exist, please register");
 			}
 		}
 

@@ -1,4 +1,5 @@
 ﻿using Orbit.Core.Exceptions;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -76,11 +77,11 @@ namespace OrbitAPI.Middlewares
 				message = exception.Message;
 				stackTrace = exception.StackTrace;
 			}
-			var exceptionResult = JsonSerializer.Serialize(new
+			var exceptionResult = new
 			{
-				error = message,
-				stackTrace
-			});
+				message,
+				stackTrace = Debugger.IsAttached ? stackTrace : null
+			};
 			context.Response.ContentType = "application/json";
 			context.Response.StatusCode = (int)status;
 			return context.Response.WriteAsJsonAsync(exceptionResult);
