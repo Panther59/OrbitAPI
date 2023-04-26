@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Orbit.Core;
 using Orbit.Core.DataAccess;
 using Orbit.Models.OrbitDB;
+using System.Diagnostics;
 
 namespace OrbitAPI.Controllers
 {
@@ -38,23 +39,22 @@ namespace OrbitAPI.Controllers
 			var existingOrg = await this.organizationService.GetByNameAsync(org.Name);
 			if (existingOrg != null)
 			{
-				if (!this.userSession.HasPermission(Roles.Admin, org.ID))
+				if (!Debugger.IsAttached && !this.userSession.HasPermission(Roles.Admin, org.ID))
 				{
 					throw new Exception($"You do not have permission to update org record for {org.Name}, please reach out to Admin");
 				}
-
 
 				org.ID = existingOrg.ID;
 				this.userSession.SetCreatedAuditColumns(org, existingOrg);
 				this.userSession.SetUpdatedAuditColumns(org);
 
-				await this.organizationService.UpdateAsync(existingOrg);
+				await this.organizationService.UpdateAsync(org);
 
-				return existingOrg;
+				return org;
 			}
 			else
 			{
-				if (!this.userSession.HasPermission(Roles.Admin))
+				if (!Debugger.IsAttached && !this.userSession.HasPermission(Roles.Admin))
 				{
 					throw new Exception($"You do not have permission to add new org, please reach out to Admin");
 				}

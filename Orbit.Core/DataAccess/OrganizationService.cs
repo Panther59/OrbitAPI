@@ -39,7 +39,7 @@ namespace Orbit.Core.DataAccess
 			}
 			else
 			{
-				if (org.IsActive)
+				if (org.IsActive == true)
 				{
 					throw new Exception($"There is already a valid org in the system with name {org.Name}");
 				}
