@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Orbit.Core;
 using Orbit.Core.DataAccess;
 using Orbit.Core.Exceptions;
 using Orbit.Models.DTOs;
@@ -13,6 +15,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace OrbitAPI.Controllers
 {
@@ -23,12 +26,18 @@ namespace OrbitAPI.Controllers
 		private readonly GoogleSetting googleSetting;
 		private readonly JwtSetting jwtSetting;
 		private readonly IUserService userService;
+		private readonly IUserSession userSession;
 
-		public AuthController(IOptions<GoogleSetting> googleSettingOption, IOptions<JwtSetting> jwtSettingOption, IUserService userService)
+		public AuthController(
+			IOptions<GoogleSetting> googleSettingOption, 
+			IOptions<JwtSetting> jwtSettingOption, 
+			IUserService userService,
+			IUserSession userSession)
 		{
 			this.googleSetting = googleSettingOption.Value;
 			this.jwtSetting = jwtSettingOption.Value;
 			this.userService = userService;
+			this.userSession = userSession;
 		}
 
 		[HttpPost("LoginWithGoogle")]
@@ -54,6 +63,7 @@ namespace OrbitAPI.Controllers
 
 			if (user != null)
 			{
+				user.Roles = await userService.GetUserRoles(user.ID);
 				return JWTGenerator(user);
 			}
 			else
@@ -74,15 +84,13 @@ namespace OrbitAPI.Controllers
 
 			var user = new User()
 			{
-				Created = DateTime.Now,
-				CreatedBy = 1,
-				Updated = DateTime.Now,
-				UpdatedBy = 1,
 				Email = payload.Email,
 				FirstName = payload.GivenName,
 				LastName = payload.FamilyName,
 				IsActive = true,
 			};
+			this.userSession.SetCreatedAuditColumns(user);
+			this.userSession.SetUpdatedAuditColumns(user);
 
 			await this.userService.AddUser(user);
 		}
@@ -97,9 +105,7 @@ namespace OrbitAPI.Controllers
 				Subject = new ClaimsIdentity(new[]
 				{
 					new Claim(ClaimTypes.Name, user.ID.ToString()),
-
-					new Claim("id", user.ID.ToString()),
-					new Claim(ClaimTypes.Role, "Admin")
+					new Claim("id", user.ID.ToString()),					
 				}),
 				Expires = DateTime.Now.AddMinutes(jwtSetting.DurationInMinutes),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature),
@@ -110,6 +116,11 @@ namespace OrbitAPI.Controllers
 			if (!string.IsNullOrEmpty(user.Picture))
 			{
 				tokenDescriptor.Subject.AddClaim(new Claim("AvatarUrl", user.Picture));
+			}
+
+			if (user.Roles != null && user.Roles.Count > 0)
+			{
+				tokenDescriptor.Subject.AddClaim(new Claim(ClaimTypes.Role, JsonConvert.SerializeObject(user.Roles)));
 			}
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);

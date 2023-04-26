@@ -31,11 +31,20 @@ namespace Orbit.Core
 			}
 		}
 
+		public async Task<List<T>> GetAllData<T>() where T : class
+		{
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				var result = await connection.GetAllAsync<T>();
+				return result.ToList();
+			}
+		}
+
 		public async Task<int?> GetMaxID(string table)
 		{
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
 			{
-				var result = await connection.QueryFirstOrDefaultAsync<User>($"SELECT MAX(ID) as ID FROM {table} (NOLOCK)");
+				var result = await connection.QueryFirstOrDefaultAsync<dynamic>($"SELECT MAX(ID) as ID FROM {table} (NOLOCK)");
 				return result?.ID;
 			}
 		}
@@ -106,5 +115,25 @@ namespace Orbit.Core
 			}
 		}
 
+		public async Task<int> ExecuteAsync(string sql)
+		{
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				return await connection.ExecuteAsync(sql);
+			}
+		}
+
+		public string TableNameMapper(Type type)
+		{
+			dynamic tableattr = type.GetCustomAttributes(false).SingleOrDefault(attr => attr.GetType().Name == "TableAttribute");
+			var name = string.Empty;
+
+			if (tableattr != null)
+			{
+				name = tableattr.Name;
+			}
+
+			return name;
+		}
 	}
 }

@@ -1,10 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Orbit.Core.DataAccess;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Orbit.Core.Extensions
 {
@@ -14,6 +9,9 @@ namespace Orbit.Core.Extensions
 		{
 			services.AddTransient<IUserSession, UserSession>();
 			services.AddTransient<IUserService, UserService>();
+			services.AddTransient<IUserRoleService, UserRoleService>();
+			services.AddTransient<ICompanyService, CompanyService>();
+			services.AddTransient<IClientService, ClientService>();
 			services.AddTransient<ISqlClient, SqlClient>();
 
 			return services;

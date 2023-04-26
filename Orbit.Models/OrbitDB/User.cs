@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Orbit.Models.OrbitDB
 {
 	[Dapper.Contrib.Extensions.Table("tblUsers")]
-	public class User
+	public class User: BaseAuditRecord
 	{
 		[ExplicitKey]
 		public int ID { get; set; }
@@ -20,10 +20,8 @@ namespace Orbit.Models.OrbitDB
 		public string LastName { get; set; }
 		public string Email { get; set; }
 		public bool IsActive { get; set; }
-		public DateTime Created { get; set; }
-		public int CreatedBy { get; set; }
-		public DateTime? Updated { get; set; }
-		public int? UpdatedBy { get; set; }
+		
 		public string? Picture { get; set; }
+		public List<UserRole> Roles { get; set; }
 	}
 }
