@@ -6,6 +6,8 @@ using Orbit.Core.DataAccess;
 using Orbit.Models.DTOs;
 using Orbit.Models.OrbitDB;
 using Orbit.Models.Settings;
+using System.Collections;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -14,7 +16,7 @@ using System.Text;
 namespace OrbitAPI.Controllers
 {
 	[ApiController]
-	[Route("[controller]")]
+	[Route("api/[controller]")]
 	public class AuthController : ControllerBase
 	{
 		private readonly GoogleSetting googleSetting;
@@ -29,16 +31,25 @@ namespace OrbitAPI.Controllers
 		}
 
 		[HttpPost("LoginWithGoogle")]
-		public async Task<IActionResult> LoginWithGoogle([FromBody] string credential)
+		public async Task<IActionResult> LoginWithGoogle(RegisterRequest credential)
 		{
-			var settings = new GoogleJsonWebSignature.ValidationSettings()
+			User? user = null;
+			if (!string.IsNullOrEmpty(credential.GoogleToken) || !Debugger.IsAttached)
 			{
-				Audience = new List<string> { this.googleSetting.GoogleClientId }
-			};
+				var settings = new GoogleJsonWebSignature.ValidationSettings()
+				{
+					Audience = new List<string> { this.googleSetting.GoogleClientId }
+				};
 
-			var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+				var payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
 
-			var user = await userService.GetUserByEmail(payload.Email);
+				user = await userService.GetUserByEmail(payload.Email);
+				user.Picture = payload.Picture;
+			}
+			else
+			{
+				user = await userService.GetUserByEmail(credential.Email);
+			}
 
 			if (user != null)
 			{
@@ -51,14 +62,14 @@ namespace OrbitAPI.Controllers
 		}
 
 		[HttpPost("RegisterWithGoogle")]
-		public async Task RegisterWithGoogle([FromBody] string credential)
+		public async Task RegisterWithGoogle(RegisterRequest credential)
 		{
 			var settings = new GoogleJsonWebSignature.ValidationSettings()
 			{
 				Audience = new List<string> { this.googleSetting.GoogleClientId }
 			};
 
-			var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+			var payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
 
 			var user = new User()
 			{
@@ -82,12 +93,24 @@ namespace OrbitAPI.Controllers
 
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
-				Subject = new ClaimsIdentity(new[] { new Claim("id", user.ID.ToString()) }),
-				Expires = DateTime.UtcNow.AddMinutes(jwtSetting.DurationInMinutes),
+				Subject = new ClaimsIdentity(new[]
+				{
+					new Claim(ClaimTypes.Name, user.ID.ToString()),
+
+					new Claim("id", user.ID.ToString()),
+					new Claim(ClaimTypes.Role, "Admin")
+				}),
+				Expires = DateTime.Now.AddMinutes(jwtSetting.DurationInMinutes),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature),
 				Audience = jwtSetting.Audience,
-				Issuer = jwtSetting.Issuer,
+				Issuer = jwtSetting.Issuer,				
 			};
+
+			if (!string.IsNullOrEmpty(user.Picture))
+			{
+				tokenDescriptor.Subject.AddClaim(new Claim("AvatarUrl", user.Picture));
+			}
+
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 			var encrypterToken = tokenHandler.WriteToken(token);
 
@@ -97,7 +120,7 @@ namespace OrbitAPI.Controllers
 
 			SetRefreshToken(refreshToken, user);
 
-			return new { token = encrypterToken, username = user.ID };
+			return new { token = encrypterToken, refreshToken = refreshToken, username = user.ID };
 		}
 
 		private void SetJWT(string encrypterToken)

@@ -39,14 +39,19 @@ try
 	builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 	builder.Services.Configure<GoogleSetting>(builder.Configuration.GetSection("Google"));
 
-	builder.Services.AddAuthentication(options =>
+	builder.Services.AddAuthentication(x =>
 	{
-		options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-		options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-		options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-	}).AddJwtBearer(o =>
+		x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+		x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	}).AddCookie(x =>
 	{
-		o.TokenValidationParameters = new TokenValidationParameters
+		x.Cookie.Name = "token";
+
+	}).AddJwtBearer(x =>
+	{
+		x.RequireHttpsMetadata = false;
+		x.SaveToken = true;
+		x.TokenValidationParameters = new TokenValidationParameters
 		{
 			ValidIssuer = configuration["Jwt:Issuer"],
 			ValidAudience = configuration["Jwt:Audience"],
@@ -56,7 +61,35 @@ try
 			ValidateLifetime = false,
 			ValidateIssuerSigningKey = true
 		};
+		x.Events = new JwtBearerEvents
+		{
+			OnMessageReceived = context =>
+			{
+				context.Token = context.Request.Cookies["X-Access-Token"];
+				return Task.CompletedTask;
+			}
+		};
+
 	});
+
+	//builder.Services.AddAuthentication(options =>
+	//{
+	//	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+	//	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	//	options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+	//}).AddJwtBearer(o =>
+	//{
+	//	o.TokenValidationParameters = new TokenValidationParameters
+	//	{
+	//		ValidIssuer = configuration["Jwt:Issuer"],
+	//		ValidAudience = configuration["Jwt:Audience"],
+	//		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
+	//		ValidateIssuer = true,
+	//		ValidateAudience = true,
+	//		ValidateLifetime = false,
+	//		ValidateIssuerSigningKey = true
+	//	};
+	//});
 
 	builder.Services.AddAuthorization(options =>
 	{
@@ -64,6 +97,17 @@ try
 		options.AddPolicy(AuthorizationPolicies.Admin.ToString(), policy => policy.RequireRole("ITAdmin"));
 	});
 	builder.Services.AddHttpClient();
+
+	builder.Services.AddCors(opt =>
+	{
+		opt.AddPolicy(name: "CorsPolicy", builder =>
+		{
+			builder.WithOrigins("http://localhost:4200", "https://localhost:4200")
+				.AllowAnyHeader()
+				.AllowAnyMethod()
+				.AllowCredentials();
+		});
+	});
 
 	var app = builder.Build();
 
@@ -76,8 +120,11 @@ try
 		app.UseSwaggerUI();
 	}
 
+	app.UseCors("CorsPolicy");
+
 	app.UseHttpsRedirection();
 
+	app.UseAuthentication();
 	app.UseAuthorization();
 
 	app.MapControllers();

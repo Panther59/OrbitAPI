@@ -12,6 +12,7 @@ namespace Orbit.Core.Extensions
 	{
 		public static IServiceCollection AddOrbitCore(this IServiceCollection services)
 		{
+			services.AddTransient<IUserSession, UserSession>();
 			services.AddTransient<IUserService, UserService>();
 			services.AddTransient<ISqlClient, SqlClient>();
 

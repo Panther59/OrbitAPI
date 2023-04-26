@@ -7,7 +7,7 @@ using Orbit.Models.OrbitDB;
 namespace OrbitAPI.Controllers
 {
 	[ApiController]
-	[Route("[controller]")]
+	[Route("api/[controller]")]
 	[Authorize]
 	public class UsersController : ControllerBase
 	{
@@ -20,8 +20,24 @@ namespace OrbitAPI.Controllers
 			this.userService = userService;
 		}
 
-		[HttpGet]
+		[HttpGet("me")]
 		public async Task<User> GetCurrentUser()
+		{
+			var userId = this.userSession.UserID;
+			if (userId != null)
+			{
+				var user = await this.userService.GetUserByID(userId.Value);
+				user.Picture = this.userSession.Picture;
+				return user;
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		[HttpGet("menu")]
+		public async Task<User> GetCurrentUserMenus()
 		{
 			var userId = this.userSession.UserID;
 			if (userId != null)
