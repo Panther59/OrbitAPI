@@ -26,17 +26,20 @@ namespace OrbitAPI.Controllers
 		private readonly GoogleSetting googleSetting;
 		private readonly JwtSetting jwtSetting;
 		private readonly IUserService userService;
+		private readonly IUserRoleService userRoleService;
 		private readonly IUserSession userSession;
 
 		public AuthController(
 			IOptions<GoogleSetting> googleSettingOption, 
 			IOptions<JwtSetting> jwtSettingOption, 
 			IUserService userService,
+			IUserRoleService userRoleService,
 			IUserSession userSession)
 		{
 			this.googleSetting = googleSettingOption.Value;
 			this.jwtSetting = jwtSettingOption.Value;
 			this.userService = userService;
+			this.userRoleService = userRoleService;
 			this.userSession = userSession;
 		}
 
@@ -63,7 +66,7 @@ namespace OrbitAPI.Controllers
 
 			if (user != null)
 			{
-				user.Roles = await userService.GetUserRoles(user.ID);
+				user.Roles = await this.userRoleService.GetUserRoles(user.ID);
 				return JWTGenerator(user);
 			}
 			else

@@ -14,21 +14,27 @@ namespace OrbitAPI.Controllers
 	public class RolesController : ControllerBase
 	{
 		private readonly IUserSession userSession;
-		private readonly IUserService userService;
+		private readonly IUserRoleService userRoleService;
 
-		public RolesController(IUserSession userSession, IUserService userService)
+		public RolesController(IUserSession userSession, IUserRoleService userRoleService)
 		{
 			this.userSession = userSession;
-			this.userService = userService;
+			this.userRoleService = userRoleService;
 		}
 
 		[HttpGet]
 		public Task<List<Role>> GetAllRoles()
 		{
-			return this.userService.GetAllRoles();
+			return this.userRoleService.GetAllRoles();
 		}
 
-		[HttpPut]
+		[HttpGet("users")]
+		public Task<List<UserRole>> GetAllUserRoles([FromQuery] int? userId = null, [FromQuery] int? companyId = null, [FromQuery] int? clientId = null)
+		{
+			return this.userRoleService.GetUserRoles(userId, companyId, clientId);
+		}
+
+		[HttpPut("users")]
 		public async Task<UserRole> AddRole(UserRole userRole)
 		{
 			if (!userRole.UserID.HasValue)
@@ -41,9 +47,9 @@ namespace OrbitAPI.Controllers
 				throw new BadRequestException("User Role details is missing");
 			}
 
+			userSession.SetCreatedAuditColumns(userRole);
 			userSession.SetUpdatedAuditColumns(userRole);
-			userSession.SetUpdatedAuditColumns(userRole);
-			userRole = await this.userService.AddRole(userRole);
+			userRole = await this.userRoleService.AddRole(userRole);
 			return userRole;
 		}
 
@@ -60,7 +66,7 @@ namespace OrbitAPI.Controllers
 				throw new BadRequestException("User Role details is missing");
 			}
 
-			await this.userService.DeleteRole(userRole);
+			await this.userRoleService.DeleteRole(userRole);
 		}
 	}
 }

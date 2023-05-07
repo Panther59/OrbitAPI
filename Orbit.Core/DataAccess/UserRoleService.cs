@@ -11,9 +11,13 @@ namespace Orbit.Core.DataAccess
 			this.sqlClient = sqlClient;
 		}
 
-		public async Task<List<UserRole>> GetUserRoles(int userId)
+		public async Task<List<UserRole>> GetUserRoles(int? userId = null, int? companyId = null, int? clientId = null)
 		{
-			string sql = $"EXEC spGetUserRoles '{userId}'";
+			string sql = $"EXEC [dbo].[spGetUserRoles] " +
+				$"@userId = {(userId.HasValue ? userId.Value : "NULL")}, " +
+				$"@companyId = {(companyId.HasValue ? companyId.Value : "NULL")}, " +
+				$"@clientId = {(clientId.HasValue ? clientId.Value : "NULL")} ";
+
 			return await this.sqlClient.GetData<UserRole>(sql);
 		}
 
@@ -24,28 +28,23 @@ namespace Orbit.Core.DataAccess
 
 		public async Task<UserRole> AddRole(UserRole userRole)
 		{
-			string sql = $"SELECT * FROM tblUserRoles (NOLOCK) where UserID = '{userRole.UserID}' and RoleID = '{userRole.RoleID}'";
-			if (userRole.CompanyID.HasValue)
-			{
-				sql += $" and CompanyID = '{userRole.CompanyID}'";
-			}
-			else if (userRole.ClientID.HasValue)
-			{
-				sql += $" and ClientID = '{userRole.ClientID}'";
-			}
-
-			var results = await this.sqlClient.GetData<UserRole>(sql);
+			var results = await this.GetUserRoles(userRole.UserID, userRole.CompanyID, userRole.ClientID);
 			var existingUserRole = results?.FirstOrDefault();
-			if (existingUserRole == null)
+			if (existingUserRole != null)
 			{
-				await this.sqlClient.InsertAsync(userRole);
+				if (existingUserRole.RoleID == userRole.RoleID)
+				{
+					throw new Exception($"This permission already exists for {existingUserRole.User}");
+				}
+				else if (existingUserRole.RoleID < userRole.RoleID)
+				{
+					throw new Exception($"{existingUserRole.User} already has higher permission ({existingUserRole.Role}) available, if you want to change permission then edit existing permission");
+				}
+			}
 
-				return userRole;
-			}
-			else
-			{
-				throw new Exception($"This permission already exists");
-			}
+			await this.sqlClient.InsertAsync(userRole);
+
+			return userRole;
 		}
 
 		public async Task DeleteRole(UserRole userRole)

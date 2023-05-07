@@ -20,6 +20,12 @@ namespace OrbitAPI.Controllers
 			this.userService = userService;
 		}
 
+		[HttpGet]
+		public Task<List<User>> GetAllCurrentUser()
+		{
+			return this.userService.GetAllUsers();
+		}
+
 		[HttpGet("me")]
 		public async Task<User> GetCurrentUser()
 		{

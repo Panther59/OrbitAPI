@@ -11,7 +11,8 @@ namespace Orbit.Models.OrbitDB
 	public class Role : BaseAuditRecord
 	{
 		[ExplicitKey]
-		public int ID { get; set; }
+		public int? ID { get; set; }
 		public string Name { get; set; }		
+		public bool? ForClient { get; set; }		
 	}
 }

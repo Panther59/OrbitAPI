@@ -9,11 +9,12 @@ namespace Orbit.Models.OrbitDB
 	public class UserRole : BaseAuditRecord
 	{
 		public int? CompanyID { get; set; }
-		public string Company { get; set; }
+		public string? Company { get; set; }
 		public int? ClientID { get; set; }
-		public string Client { get; set; }
+		public string? Client { get; set; }
 		public int? RoleID { get; set; }
-		public string Role { get; set; }		
+		public string? Role { get; set; }		
 		public int? UserID { get; set; }
+		public string? User { get; set; }
 	}
 }
