@@ -31,6 +31,11 @@ namespace OrbitAPI.Controllers
 		[HttpGet("users")]
 		public Task<List<UserRole>> GetAllUserRoles([FromQuery] int? userId = null, [FromQuery] int? companyId = null, [FromQuery] int? clientId = null)
 		{
+			if (!this.userSession.HasPermission(Roles.Admin))
+			{
+				throw new Exception($"You do not have permission to view org list, please reach out to Admin");
+			}
+
 			return this.userRoleService.GetUserRoles(userId, companyId, clientId);
 		}
 
@@ -40,6 +45,11 @@ namespace OrbitAPI.Controllers
 			if (!userRole.UserID.HasValue)
 			{
 				throw new BadRequestException("User details is missing");
+			}
+
+			if (userRole.UserID == this.userSession.UserID)
+			{
+				throw new BadRequestException("You can not change permission for your own account, reach out to other Admin user");
 			}
 
 			if (!userRole.RoleID.HasValue)

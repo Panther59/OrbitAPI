@@ -88,7 +88,7 @@ namespace Orbit.Core
 		public void SetUpdatedAuditColumns(BaseAuditRecord record)
 		{
 			record.Updated = DateTime.Now;
-			record.UpdatedBy = this.UserID;
+			record.UpdatedBy = this.UserID ?? 1;
 		}
 
 		public void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null)

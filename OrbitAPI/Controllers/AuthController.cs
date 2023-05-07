@@ -30,8 +30,8 @@ namespace OrbitAPI.Controllers
 		private readonly IUserSession userSession;
 
 		public AuthController(
-			IOptions<GoogleSetting> googleSettingOption, 
-			IOptions<JwtSetting> jwtSettingOption, 
+			IOptions<GoogleSetting> googleSettingOption,
+			IOptions<JwtSetting> jwtSettingOption,
 			IUserService userService,
 			IUserRoleService userRoleService,
 			IUserSession userSession)
@@ -56,8 +56,16 @@ namespace OrbitAPI.Controllers
 
 				var payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
 
+				if (payload == null)
+				{
+					throw new BadRequestException("Your security token was not verified by Google, please try again.");
+				}
+
 				user = await userService.GetUserByEmail(payload.Email);
-				user.Picture = payload.Picture;
+				if (user != null)
+				{
+					user.Picture = payload.Picture;
+				}
 			}
 			else
 			{
@@ -108,12 +116,12 @@ namespace OrbitAPI.Controllers
 				Subject = new ClaimsIdentity(new[]
 				{
 					new Claim(ClaimTypes.Name, user.ID.ToString()),
-					new Claim("id", user.ID.ToString()),					
+					new Claim("id", user.ID.ToString()),
 				}),
 				Expires = DateTime.Now.AddMinutes(jwtSetting.DurationInMinutes),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature),
 				Audience = jwtSetting.Audience,
-				Issuer = jwtSetting.Issuer,				
+				Issuer = jwtSetting.Issuer,
 			};
 
 			if (!string.IsNullOrEmpty(user.Picture))
