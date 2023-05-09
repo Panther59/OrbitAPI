@@ -25,12 +25,19 @@ namespace OrbitAPI.Controllers
 		[HttpGet]
 		public Task<List<T>> GetAll()
 		{
-			if (!this.userSession.HasPermission(Roles.Admin))
+			if (this.userSession.HasPermission(Roles.Admin))
 			{
-				throw new Exception($"You do not have permission to view org list, please reach out to Admin");
+				return this.organizationService.GetAllAsync();
 			}
+			else
+			{
+				if (!this.userSession.UserID.HasValue)
+				{
+					throw new Exception("You don't have permission to perform this action");
+				}
 
-			return this.organizationService.GetAllAsync();
+				return this.organizationService.GetAllForUserAsync(this.userSession.UserID.Value);
+			}
 		}
 
 		[HttpPut]

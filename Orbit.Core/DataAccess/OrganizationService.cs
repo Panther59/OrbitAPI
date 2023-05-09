@@ -15,6 +15,8 @@ namespace Orbit.Core.DataAccess
 
 		public ISqlClient SqlClient => sqlClient;
 
+		public string TableName => tableName;
+
 		public OrganizationService(ISqlClient sqlClient)
 		{
 			this.sqlClient = sqlClient;
@@ -31,7 +33,7 @@ namespace Orbit.Core.DataAccess
 			var existingOrg = await this.GetByNameAsync(org.Name);
 			if (existingOrg == null)
 			{
-				var maxId = await this.SqlClient.GetMaxID(tableName);
+				var maxId = await this.SqlClient.GetMaxID(TableName);
 				org.ID = (maxId ?? 0) + 1;
 				await this.SqlClient.InsertAsync(org);
 
@@ -55,16 +57,18 @@ namespace Orbit.Core.DataAccess
 			return await this.SqlClient.GetAllData<T>();
 		}
 
+		public abstract Task<List<T>> GetAllForUserAsync(int userID);
+
 		public async Task<T?> GetByNameAsync(string name)
 		{
-			string sql = $"SELECT * FROM {tableName} (NOLOCK) where Name = '{name}'";
+			string sql = $"SELECT * FROM {TableName} (NOLOCK) where Name = '{name}'";
 			var results = await this.SqlClient.GetData<T>(sql);
 			return results?.FirstOrDefault();
 		}
 
 		public async Task<T?> GetByIDAsync(int id)
 		{
-			string sql = $"SELECT * FROM {tableName} (NOLOCK) where ID = '{id}'";
+			string sql = $"SELECT * FROM {TableName} (NOLOCK) where ID = '{id}'";
 			var results = await this.SqlClient.GetData<T>(sql);
 			return results?.FirstOrDefault();
 		}
@@ -79,5 +83,6 @@ namespace Orbit.Core.DataAccess
 			org.IsActive = false;
 			await this.UpdateAsync(org);
 		}
+
 	}
 }
