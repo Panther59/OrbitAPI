@@ -31,12 +31,23 @@ namespace OrbitAPI.Controllers
 		[HttpGet("users")]
 		public Task<List<UserRole>> GetAllUserRoles([FromQuery] int? userId = null, [FromQuery] int? companyId = null, [FromQuery] int? clientId = null)
 		{
-			if (!userId.HasValue && !this.userSession.HasPermission(Roles.Admin))
+			if (!userId.HasValue && !this.userSession.HasPermission(Permissions.ManageAllPermissions))
 			{
 				throw new Exception($"You do not have permission to view org list, please reach out to Admin");
 			}
 
 			return this.userRoleService.GetUserRoles(userId, companyId, clientId);
+		}
+
+		[HttpGet("orgs")]
+		public Task<List<Organization>> GetAllUserOrganizations([FromQuery] int? userId = null, [FromQuery] int? companyId = null, [FromQuery] int? clientId = null)
+		{
+			if (!userId.HasValue)
+			{
+				throw new BadRequestException("User ID is required");
+			}
+
+			return this.userRoleService.GetUserOrganizations(userId.Value, companyId, clientId);
 		}
 
 		[HttpPut("users")]

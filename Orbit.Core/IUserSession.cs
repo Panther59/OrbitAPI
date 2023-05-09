@@ -5,9 +5,9 @@ namespace Orbit.Core
 	public interface IUserSession
 	{
 		int? UserID { get; }
+		Organization? Organization { get; }
 		string? Picture { get; }
-		List<UserRole> Roles { get; }
-		bool HasPermission(string role, int? companyId = null);
+		bool HasPermission(string role);
 		void SetUpdatedAuditColumns(BaseAuditRecord record);
 		void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null);
 	}

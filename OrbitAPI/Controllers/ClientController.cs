@@ -12,5 +12,9 @@ namespace OrbitAPI.Controllers
 		public ClientController(IUserSession userSession, IClientService clientService) : base(userSession, clientService)
 		{
 		}
+
+		public override string OrgUpdatePermissionName => Permissions.ManageMyClientPermission;
+
+		public override string OrgUpdateAdminPermissionName => Permissions.ManageClients;
 	}
 }

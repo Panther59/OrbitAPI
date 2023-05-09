@@ -12,5 +12,9 @@ namespace OrbitAPI.Controllers
 		public CompanyController(IUserSession userSession, ICompanyService companyService) : base(userSession, companyService)
 		{
 		}
+
+		public override string OrgUpdatePermissionName => Permissions.ManageMyCompanyPermissions;
+
+		public override string OrgUpdateAdminPermissionName => Permissions.ManageCompanies;
 	}
 }

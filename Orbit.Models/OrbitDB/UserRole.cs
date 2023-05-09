@@ -23,5 +23,7 @@ namespace Orbit.Models.OrbitDB
 		public string? Role { get; set; }		
 		[Write(false)]
 		public string? User { get; set; }
+		[Write(false)]
+		public int? RoleRanking { get; set; }
 	}
 }

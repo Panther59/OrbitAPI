@@ -10,7 +10,7 @@ namespace OrbitAPI.Controllers
 	[ApiController]
 	[Route("api/[controller]")]
 	[Authorize]
-	public class OrganizationController<T> : ControllerBase
+	public abstract class OrganizationController<T> : ControllerBase
 		where T : Organization
 	{
 		private readonly IUserSession userSession;
@@ -25,7 +25,7 @@ namespace OrbitAPI.Controllers
 		[HttpGet]
 		public Task<List<T>> GetAll()
 		{
-			if (this.userSession.HasPermission(Roles.Admin))
+			if (this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
 			{
 				return this.organizationService.GetAllAsync();
 			}
@@ -40,13 +40,20 @@ namespace OrbitAPI.Controllers
 			}
 		}
 
+		public abstract string OrgUpdatePermissionName { get; }
+		public abstract string OrgUpdateAdminPermissionName { get; }
+
 		[HttpPut]
 		public async Task<T> Upsert(T org)
 		{
 			var existingOrg = await this.organizationService.GetByNameAsync(org.Name);
 			if (existingOrg != null)
 			{
-				if (!Debugger.IsAttached && !this.userSession.HasPermission(Roles.Admin, org.ID))
+				if (!Debugger.IsAttached &&
+					(this.userSession.Organization != null &&
+					this.userSession.Organization.ID == org.ID &&
+					!this.userSession.HasPermission(this.OrgUpdatePermissionName)) ||
+					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
 				{
 					throw new Exception($"You do not have permission to update org record for {org.Name}, please reach out to Admin");
 				}
@@ -61,7 +68,7 @@ namespace OrbitAPI.Controllers
 			}
 			else
 			{
-				if (!Debugger.IsAttached && !this.userSession.HasPermission(Roles.Admin))
+				if (!Debugger.IsAttached && !this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
 				{
 					throw new Exception($"You do not have permission to add new org, please reach out to Admin");
 				}
@@ -80,7 +87,11 @@ namespace OrbitAPI.Controllers
 			var existingOrg = await this.organizationService.GetByIDAsync(id);
 			if (existingOrg != null)
 			{
-				if (!this.userSession.HasPermission(Roles.Admin, existingOrg.ID))
+				if (!Debugger.IsAttached &&
+					(this.userSession.Organization != null &&
+					this.userSession.Organization.ID == existingOrg.ID &&
+					!this.userSession.HasPermission(this.OrgUpdatePermissionName)) ||
+					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
 				{
 					throw new Exception($"You do not have permission to delete org record for {existingOrg.Name}, please reach out to Admin");
 				}

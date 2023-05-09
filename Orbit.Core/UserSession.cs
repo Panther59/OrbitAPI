@@ -51,49 +51,37 @@ namespace Orbit.Core
 			}
 		}
 
-		public List<UserRole> Roles
+		public Organization? Organization
 		{
 			get
 			{
 				var identity = httpContextAccessor.HttpContext.User?.Identity as ClaimsIdentity;
-				var pictureClaim = identity?.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Role);
-				if (pictureClaim != null && !string.IsNullOrEmpty(pictureClaim.Value))
+				var orgClaim = identity?.Claims.FirstOrDefault(x => x.Type == "Organization");
+				if (orgClaim != null && !string.IsNullOrEmpty(orgClaim.Value))
 				{
-					return JsonConvert.DeserializeObject<List<UserRole>>(pictureClaim.Value);
+					return JsonConvert.DeserializeObject<Organization>(orgClaim.Value);
 				}
 
 				return null;
 			}
 		}
 
-		public bool HasPermission(string role, int? companyId = null)
+		public bool HasPermission(string role)
 		{
 			bool allow = false;
-			var roles = this.Roles;
-			if (roles != null)
-			{
-				foreach (var item in roles)
-				{
-					if (item.Role == role && ((companyId.HasValue && item.CompanyID == companyId) || (item.CompanyID == null && !companyId.HasValue)))
-					{
-						allow = true;
-						break;
-					}
-				}
-			}
-
+			httpContextAccessor.HttpContext.User.HasClaim(ClaimTypes.Role, role);
 			return allow;
 		}
 
 		public void SetUpdatedAuditColumns(BaseAuditRecord record)
 		{
-			record.Updated = DateTime.Now;
+			record.UpdatedOn = DateTime.Now;
 			record.UpdatedBy = this.UserID ?? 1;
 		}
 
 		public void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null)
 		{
-			record.Created = originalRecord?.Created ?? DateTime.Now;
+			record.CreatedOn = originalRecord?.CreatedOn ?? DateTime.Now;
 			record.CreatedBy = originalRecord?.CreatedBy ?? this.UserID ?? 1;
 		}
 	}

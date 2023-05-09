@@ -1,4 +1,5 @@
 ﻿using Google.Apis.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +17,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
+using static Google.Apis.Auth.GoogleJsonWebSignature;
 
 namespace OrbitAPI.Controllers
 {
@@ -47,6 +49,7 @@ namespace OrbitAPI.Controllers
 		public async Task<dynamic> LoginWithGoogle(RegisterRequest credential)
 		{
 			User? user = null;
+			Payload? payload = null;
 			if (!string.IsNullOrEmpty(credential.GoogleToken) || !Debugger.IsAttached)
 			{
 				var settings = new GoogleJsonWebSignature.ValidationSettings()
@@ -54,7 +57,7 @@ namespace OrbitAPI.Controllers
 					Audience = new List<string> { this.googleSetting.GoogleClientId }
 				};
 
-				var payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
+				payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
 
 				if (payload == null)
 				{
@@ -72,41 +75,49 @@ namespace OrbitAPI.Controllers
 				user = await userService.GetUserByEmail(credential.Email);
 			}
 
-			if (user != null)
+			if (user == null)
 			{
-				user.Roles = await this.userRoleService.GetUserRoles(user.ID);
-				return JWTGenerator(user);
+				user = new User()
+				{
+					Email = payload.Email,
+					FirstName = payload.GivenName,
+					LastName = payload.FamilyName,
+					IsActive = true,
+				};
+				this.userSession.SetCreatedAuditColumns(user);
+				this.userSession.SetUpdatedAuditColumns(user);
+
+				await this.userService.AddUser(user);
 			}
-			else
-			{
-				throw new BadRequestException("Your account doesn't exist, please register");
-			}
+
+			user.Permissions = await this.userRoleService.GetUserPermissions(user.ID);
+			return JWTGenerator(user);
 		}
 
-		[HttpPost("RegisterWithGoogle")]
-		public async Task RegisterWithGoogle(RegisterRequest credential)
+		[HttpPost("LoginForOrg")]
+		[Authorize]
+		public async Task<dynamic> LoginWithGoogleAndOrgnaization(UnknownOrg org)
 		{
-			var settings = new GoogleJsonWebSignature.ValidationSettings()
+			if (!this.userSession.UserID.HasValue)
 			{
-				Audience = new List<string> { this.googleSetting.GoogleClientId }
-			};
+				throw new Exception("You are not authorized");
+			}
 
-			var payload = await GoogleJsonWebSignature.ValidateAsync(credential.GoogleToken, settings);
+			var user = await userService.GetUserByID(this.userSession.UserID.Value);
 
-			var user = new User()
+			if (user == null)
 			{
-				Email = payload.Email,
-				FirstName = payload.GivenName,
-				LastName = payload.FamilyName,
-				IsActive = true,
-			};
-			this.userSession.SetCreatedAuditColumns(user);
-			this.userSession.SetUpdatedAuditColumns(user);
+				throw new Exception($"Your account doesn't exists, please reach out to Admin");
+			}
 
-			await this.userService.AddUser(user);
+			user.Permissions = await this.userRoleService.GetUserPermissions(
+				user.ID,
+				org.Type == OrganizationType.Company ? org.ID : null,
+				org.Type == OrganizationType.Client ? org.ID : null);
+			return JWTGenerator(user, org);
 		}
 
-		private dynamic JWTGenerator(User user)
+		private dynamic JWTGenerator(User user, UnknownOrg org = null)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var key = Encoding.ASCII.GetBytes(this.jwtSetting.Key);
@@ -129,9 +140,17 @@ namespace OrbitAPI.Controllers
 				tokenDescriptor.Subject.AddClaim(new Claim("AvatarUrl", user.Picture));
 			}
 
-			if (user.Roles != null && user.Roles.Count > 0)
+			if (org != null)
 			{
-				tokenDescriptor.Subject.AddClaim(new Claim(ClaimTypes.Role, JsonConvert.SerializeObject(user.Roles)));
+				tokenDescriptor.Subject.AddClaim(new Claim("Organization", JsonConvert.SerializeObject(org)));
+			}
+
+			if (user.Permissions != null && user.Permissions.Count > 0)
+			{
+				foreach (var perm in user.Permissions)
+				{
+					tokenDescriptor.Subject.AddClaim(new Claim(ClaimTypes.Role, perm));
+				}
 			}
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -143,7 +162,7 @@ namespace OrbitAPI.Controllers
 
 			SetRefreshToken(refreshToken, user);
 
-			return new { token = encrypterToken, refreshToken = refreshToken, username = user.ID };
+			return new { token = encrypterToken, refreshToken = refreshToken, userID = user.ID };
 		}
 
 		private void SetJWT(string encrypterToken)

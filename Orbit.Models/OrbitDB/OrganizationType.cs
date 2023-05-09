@@ -6,12 +6,9 @@ using System.Threading.Tasks;
 
 namespace Orbit.Models.OrbitDB
 {
-	[Dapper.Contrib.Extensions.Table("tblCompanies")]
-	public class Company : Organization
+	public enum OrganizationType
 	{
-		public Company()
-		{
-			this.Type = OrganizationType.Company;
-		}
+		Company,
+		Client
 	}
 }

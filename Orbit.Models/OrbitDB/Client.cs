@@ -9,5 +9,9 @@ namespace Orbit.Models.OrbitDB
 	[Dapper.Contrib.Extensions.Table("tblClients")]
 	public class Client : Organization
 	{
+		public Client()
+		{
+			this.Type = OrganizationType.Client;
+		}
 	}
 }

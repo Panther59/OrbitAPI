@@ -19,5 +19,12 @@ namespace Orbit.Models.OrbitDB
 		public string? ZipCode { get; set; }
 		public string? Email { get; set; }
 		public bool? IsActive { get; set; }
+
+		[Computed]
+		public OrganizationType? Type { get; set; }
+	}
+
+	public class UnknownOrg : Organization
+	{
 	}
 }
