@@ -31,7 +31,7 @@ namespace OrbitAPI.Controllers
 		[HttpGet("users")]
 		public Task<List<UserRole>> GetAllUserRoles([FromQuery] int? userId = null, [FromQuery] int? companyId = null, [FromQuery] int? clientId = null)
 		{
-			if (!this.userSession.HasPermission(Roles.Admin))
+			if (!userId.HasValue && !this.userSession.HasPermission(Roles.Admin))
 			{
 				throw new Exception($"You do not have permission to view org list, please reach out to Admin");
 			}
