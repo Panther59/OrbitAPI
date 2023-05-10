@@ -10,8 +10,7 @@ namespace Orbit.Core.Extensions
 			services.AddTransient<IUserSession, UserSession>();
 			services.AddTransient<IUserService, UserService>();
 			services.AddTransient<IUserRoleService, UserRoleService>();
-			services.AddTransient<ICompanyService, CompanyService>();
-			services.AddTransient<IClientService, ClientService>();
+			services.AddTransient<IOrganizationService, OrganizationService>();
 			services.AddTransient<ISqlClient, SqlClient>();
 
 			return services;

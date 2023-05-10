@@ -2,14 +2,14 @@
 
 namespace Orbit.Core.DataAccess
 {
-	public interface IOrganizationService<T>
+	public interface IOrganizationService
 	{
-		Task<T> AddAsync(T company);
-		Task<List<T>> GetAllAsync();
-		Task<List<T>> GetAllForUserAsync(int userID);
-		Task<T?> GetByIDAsync(int id);
-		Task<T?> GetByNameAsync(string name);
-		Task SetInactiveAsync(T org);
-		Task UpdateAsync(T company);
+		Task<Organization> AddAsync(Organization company);
+		Task<List<Organization>> GetAllAsync();
+		Task<List<Organization>> GetAllForUserAsync(int userID);
+		Task<Organization?> GetByIDAsync(int id);
+		Task<Organization?> GetByNameAsync(string name);
+		Task SetInactiveAsync(Organization org);
+		Task UpdateAsync(Organization company);
 	}
 }

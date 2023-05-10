@@ -13,7 +13,7 @@ namespace Orbit.Models.OrbitDB
 		[ExplicitKey]
 		public int? ID { get; set; }
 		public string Name { get; set; }		
-		public RoleType Type { get; set; }
+		public RoleTypes Type { get; set; }
 		public int? Ranking { get; set; }
 	}
 }

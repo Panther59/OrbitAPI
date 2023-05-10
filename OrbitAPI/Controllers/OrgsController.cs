@@ -10,22 +10,21 @@ namespace OrbitAPI.Controllers
 	[ApiController]
 	[Route("api/[controller]")]
 	[Authorize]
-	public abstract class OrganizationController<T> : ControllerBase
-		where T : Organization
+	public class OrgsController : ControllerBase
 	{
 		private readonly IUserSession userSession;
-		private readonly IOrganizationService<T> organizationService;
+		private readonly IOrganizationService organizationService;
 
-		public OrganizationController(IUserSession userSession, IOrganizationService<T> organizationService)
+		public OrgsController(IUserSession userSession, IOrganizationService organizationService)
 		{
 			this.userSession = userSession;
 			this.organizationService = organizationService;
 		}
 
 		[HttpGet]
-		public Task<List<T>> GetAll()
+		public Task<List<Organization>> GetAll()
 		{
-			if (this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
+			if (this.userSession.HasPermission(Permissions.ManageCompanies) || this.userSession.HasPermission(Permissions.ManageClients))
 			{
 				return this.organizationService.GetAllAsync();
 			}
@@ -40,11 +39,17 @@ namespace OrbitAPI.Controllers
 			}
 		}
 
-		public abstract string OrgUpdatePermissionName { get; }
-		public abstract string OrgUpdateAdminPermissionName { get; }
+		private string OrgUpdatePermissionName(OrganizationType? type)
+		{
+			return type == OrganizationType.Client ? Permissions.ManageMyClientPermission : Permissions.ManageMyCompanyPermissions;
+		}
+		private string OrgUpdateAdminPermissionName(OrganizationType? type)
+		{
+			return type == OrganizationType.Client ? Permissions.ManageClients : Permissions.ManageCompanies;
+		}
 
 		[HttpPut]
-		public async Task<T> Upsert(T org)
+		public async Task<Organization> Upsert(Organization org)
 		{
 			var existingOrg = await this.organizationService.GetByNameAsync(org.Name);
 			if (existingOrg != null)
@@ -52,8 +57,8 @@ namespace OrbitAPI.Controllers
 				if (!Debugger.IsAttached &&
 					(this.userSession.Organization != null &&
 					this.userSession.Organization.ID == org.ID &&
-					!this.userSession.HasPermission(this.OrgUpdatePermissionName)) ||
-					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
+					!this.userSession.HasPermission(this.OrgUpdatePermissionName(existingOrg.Type))) ||
+					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName(existingOrg.Type)))
 				{
 					throw new Exception($"You do not have permission to update org record for {org.Name}, please reach out to Admin");
 				}
@@ -68,7 +73,7 @@ namespace OrbitAPI.Controllers
 			}
 			else
 			{
-				if (!Debugger.IsAttached && !this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
+				if (!Debugger.IsAttached && !this.userSession.HasPermission(this.OrgUpdateAdminPermissionName(org.Type)))
 				{
 					throw new Exception($"You do not have permission to add new org, please reach out to Admin");
 				}
@@ -90,8 +95,8 @@ namespace OrbitAPI.Controllers
 				if (!Debugger.IsAttached &&
 					(this.userSession.Organization != null &&
 					this.userSession.Organization.ID == existingOrg.ID &&
-					!this.userSession.HasPermission(this.OrgUpdatePermissionName)) ||
-					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName))
+					!this.userSession.HasPermission(this.OrgUpdatePermissionName(existingOrg.Type))) ||
+					!this.userSession.HasPermission(this.OrgUpdateAdminPermissionName(existingOrg.Type)))
 				{
 					throw new Exception($"You do not have permission to delete org record for {existingOrg.Name}, please reach out to Admin");
 				}

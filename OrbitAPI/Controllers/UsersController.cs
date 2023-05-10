@@ -34,6 +34,7 @@ namespace OrbitAPI.Controllers
 			{
 				var user = await this.userService.GetUserByID(userId.Value);
 				user.Picture = this.userSession.Picture;
+				user.Permissions = this.userSession.Permissions;
 				return user;
 			}
 			else

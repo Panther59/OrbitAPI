@@ -1,6 +1,6 @@
 ﻿namespace Orbit.Models.OrbitDB
 {
-	public enum RoleType
+	public enum RoleTypes
 	{
 		Infra,
 		Company,

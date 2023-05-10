@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using Orbit.Models.OrbitDB;
 using System;
 using System.Collections.Generic;
@@ -59,10 +58,21 @@ namespace Orbit.Core
 				var orgClaim = identity?.Claims.FirstOrDefault(x => x.Type == "Organization");
 				if (orgClaim != null && !string.IsNullOrEmpty(orgClaim.Value))
 				{
-					return JsonConvert.DeserializeObject<Organization>(orgClaim.Value);
+					return System.Text.Json.JsonSerializer.Deserialize<Organization>(orgClaim.Value);
 				}
 
 				return null;
+			}
+		}
+
+		public List<string>? Permissions
+		{
+			get
+			{
+				var identity = httpContextAccessor.HttpContext.User?.Identity as ClaimsIdentity;
+				var permissions = identity?.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToList();
+
+				return permissions;
 			}
 		}
 

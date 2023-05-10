@@ -7,24 +7,19 @@ using System.Threading.Tasks;
 
 namespace Orbit.Models.OrbitDB
 {
-	public abstract class Organization : BaseAuditRecord
+	[Table("tblOrganizations")]
+	public class Organization : BaseAuditRecord
 	{
 		[ExplicitKey]
 		public int? ID { get; set; }
 		public string? Name { get; set; }
 		public string? Code { get; set; }
+		public OrganizationType? Type { get; set; }
 		public string? AddressLine1 { get; set; }
 		public string? AddressLine2 { get; set; }
 		public string? City { get; set; }
 		public string? ZipCode { get; set; }
 		public string? Email { get; set; }
 		public bool? IsActive { get; set; }
-
-		[Computed]
-		public OrganizationType? Type { get; set; }
-	}
-
-	public class UnknownOrg : Organization
-	{
 	}
 }

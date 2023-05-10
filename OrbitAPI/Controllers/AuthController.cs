@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using Orbit.Core;
 using Orbit.Core.DataAccess;
 using Orbit.Core.Exceptions;
@@ -96,7 +95,7 @@ namespace OrbitAPI.Controllers
 
 		[HttpPost("LoginForOrg")]
 		[Authorize]
-		public async Task<dynamic> LoginWithGoogleAndOrgnaization(UnknownOrg org)
+		public async Task<dynamic> LoginWithGoogleAndOrgnaization(Organization org)
 		{
 			if (!this.userSession.UserID.HasValue)
 			{
@@ -110,14 +109,11 @@ namespace OrbitAPI.Controllers
 				throw new Exception($"Your account doesn't exists, please reach out to Admin");
 			}
 
-			user.Permissions = await this.userRoleService.GetUserPermissions(
-				user.ID,
-				org.Type == OrganizationType.Company ? org.ID : null,
-				org.Type == OrganizationType.Client ? org.ID : null);
+			user.Permissions = await this.userRoleService.GetUserPermissions(user.ID, org.ID);
 			return JWTGenerator(user, org);
 		}
 
-		private dynamic JWTGenerator(User user, UnknownOrg org = null)
+		private dynamic JWTGenerator(User user, Organization org = null)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var key = Encoding.ASCII.GetBytes(this.jwtSetting.Key);
@@ -142,7 +138,7 @@ namespace OrbitAPI.Controllers
 
 			if (org != null)
 			{
-				tokenDescriptor.Subject.AddClaim(new Claim("Organization", JsonConvert.SerializeObject(org)));
+				tokenDescriptor.Subject.AddClaim(new Claim("Organization", System.Text.Json.JsonSerializer.Serialize(org)));
 			}
 
 			if (user.Permissions != null && user.Permissions.Count > 0)

@@ -7,8 +7,8 @@ namespace Orbit.Core.DataAccess
 		Task<UserRole> AddRole(UserRole userRole);
 		Task DeleteRole(UserRole userRole);
 		Task<List<Role>> GetAllRoles();
-		Task<List<UserRole>> GetUserRoles(int? userId = null, int? companyId = null, int? clientId = null);
-		Task<List<Organization>> GetUserOrganizations(int userId, int? companyId = null, int? clientId = null);
-		Task<List<string>> GetUserPermissions(int userId, int? companyId = null, int? clientId = null);
+		Task<List<UserRole>> GetUserRoles(int? userId = null, int? organizationId = null);
+		Task<List<Organization>> GetUserOrganizations(int userId);
+		Task<List<string>> GetUserPermissions(int userId, int? organizationId = null);
 	}
 }

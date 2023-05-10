@@ -11,44 +11,35 @@ namespace Orbit.Core.DataAccess
 			this.sqlClient = sqlClient;
 		}
 
-		public async Task<List<UserRole>> GetUserRoles(int? userId = null, int? companyId = null, int? clientId = null)
+		public async Task<List<UserRole>> GetUserRoles(int? userId = null, int? organizationId = null)
 		{
 			string sql = $"EXEC [dbo].[spGetUserRoles] " +
 				$"@userId = {(userId.HasValue ? userId.Value : "NULL")}, " +
-				$"@companyId = {(companyId.HasValue ? companyId.Value : "NULL")}, " +
-				$"@clientId = {(clientId.HasValue ? clientId.Value : "NULL")} ";
+				$"@organizationId = {(organizationId.HasValue ? organizationId.Value : "NULL")}";
 
 			return await this.sqlClient.GetData<UserRole>(sql);
 		}
 
-		public async Task<List<string>> GetUserPermissions(int userId, int? companyId = null, int? clientId = null)
+		public async Task<List<string>> GetUserPermissions(int userId, int? organizationId = null)
 		{
 			string sql = $"EXEC [dbo].[spGetUserPermissions] " +
 				$"@userId = {userId}, " +
-				$"@companyId = {(companyId.HasValue ? companyId.Value : "NULL")}, " +
-				$"@clientId = {(clientId.HasValue ? clientId.Value : "NULL")} ";
+				$"@organizationId = {(organizationId.HasValue ? organizationId.Value : "NULL")}";
 
 			return await this.sqlClient.GetData<string>(sql);
 		}
 
-		public async Task<List<Organization>> GetUserOrganizations(int userId, int? companyId = null, int? clientId = null)
+		public async Task<List<Organization>> GetUserOrganizations(int userId)
 		{
-			var companyQuery = $"SELECT c.* FROM tblUserRoles (NOLOCK) ur INNER JOIN tblCompanies (NOLOCK) c ON ur.CompanyID = c.ID WHERE ur.UserID = {userId}";
-			var clientQuery = $"SELECT c.* FROM tblUserRoles (NOLOCK) ur INNER JOIN tblClients (NOLOCK) c ON ur.ClientID = c.ID WHERE ur.UserID = {userId}";
+			var orgQuery = $"SELECT c.* FROM tblUserRoles (NOLOCK) ur INNER JOIN tblOrganizations (NOLOCK) c ON ur.OrganizationID = c.ID WHERE ur.UserID = {userId}";
 
-			var companies = await this.sqlClient.GetData<Company>(companyQuery);
-			var clients = await this.sqlClient.GetData<Client>(clientQuery);
-			List<Organization> result = new List<Organization>();
-			result.AddRange(companies);
-			result.AddRange(clients);
-
-			return result;
+			return await this.sqlClient.GetData<Organization>(orgQuery);
 		}
 
 		public async Task<bool> IsSuperUser(int userId)
 		{
-			var orgQuery = $"SELECT c.* FROM tblUserRoles (NOLOCK) ur WHERE ur.UserID = {userId} AND ur.ClientID is NULL and ur.CompanyID is NULL";
-			var orgs = await this.sqlClient.GetData<Client>(orgQuery);
+			var orgQuery = $"SELECT c.* FROM tblUserRoles (NOLOCK) ur WHERE ur.UserID = {userId} AND ur.OrganizationID is NULL";
+			var orgs = await this.sqlClient.GetData<Organization>(orgQuery);
 			return orgs.Any();
 		}
 
@@ -59,7 +50,7 @@ namespace Orbit.Core.DataAccess
 
 		public async Task<UserRole> AddRole(UserRole userRole)
 		{
-			var results = await this.GetUserRoles(userRole.UserID, userRole.CompanyID, userRole.ClientID);
+			var results = await this.GetUserRoles(userRole.UserID, userRole.OrganizationID);
 			var existingUserRole = results?.FirstOrDefault();
 			if (existingUserRole != null)
 			{
@@ -81,13 +72,9 @@ namespace Orbit.Core.DataAccess
 		public async Task DeleteRole(UserRole userRole)
 		{
 			string sql = $"DELETE FROM tblUserRoles where UserID = '{userRole.UserID}' and RoleID = '{userRole.RoleID}'";
-			if (userRole.CompanyID.HasValue)
+			if (userRole.OrganizationID.HasValue)
 			{
-				sql += $" and CompanyID = '{userRole.CompanyID}'";
-			}
-			else if (userRole.ClientID.HasValue)
-			{
-				sql += $" and ClientID = '{userRole.ClientID}'";
+				sql += $" and OrganizationID = '{userRole.OrganizationID}'";
 			}
 
 			await this.sqlClient.ExecuteAsync(sql);

@@ -1,14 +1,8 @@
 ﻿using Orbit.Models.OrbitDB;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Orbit.Core.DataAccess
 {
-	public abstract class OrganizationService<T> : IOrganizationService<T>
-		where T : Organization
+	public class OrganizationService : IOrganizationService
 	{
 		private readonly ISqlClient sqlClient;
 		private readonly string tableName;
@@ -20,7 +14,7 @@ namespace Orbit.Core.DataAccess
 		public OrganizationService(ISqlClient sqlClient)
 		{
 			this.sqlClient = sqlClient;
-			var type = typeof(T);
+			var type = typeof(Organization);
 			this.tableName = sqlClient.TableNameMapper(type);
 			if (string.IsNullOrEmpty(this.tableName))
 			{
@@ -28,7 +22,7 @@ namespace Orbit.Core.DataAccess
 			}
 		}
 
-		public async Task<T> AddAsync(T org)
+		public async Task<Organization> AddAsync(Organization org)
 		{
 			var existingOrg = await this.GetByNameAsync(org.Name);
 			if (existingOrg == null)
@@ -52,33 +46,40 @@ namespace Orbit.Core.DataAccess
 			}
 		}
 
-		public async Task<List<T>> GetAllAsync()
+		public async Task<List<Organization>> GetAllAsync()
 		{
-			return await this.SqlClient.GetAllData<T>();
+			return await this.SqlClient.GetAllData<Organization>();
 		}
 
-		public abstract Task<List<T>> GetAllForUserAsync(int userID);
+		public async Task<List<Organization>> GetAllForUserAsync(int userID)
+		{
+			string sql = $@"SELECT DISTINCT t.* FROM {TableName} (NOLOCK) t 
+LEFT JOIN tblUserRoles r 
+ON t.ID = r.OrganizationID OR r.OrganizationID IS NULL
+where UserID = {userID}";
+			return await this.SqlClient.GetData<Organization>(sql);
+		}
 
-		public async Task<T?> GetByNameAsync(string name)
+		public async Task<Organization?> GetByNameAsync(string name)
 		{
 			string sql = $"SELECT * FROM {TableName} (NOLOCK) where Name = '{name}'";
-			var results = await this.SqlClient.GetData<T>(sql);
+			var results = await this.SqlClient.GetData<Organization>(sql);
 			return results?.FirstOrDefault();
 		}
 
-		public async Task<T?> GetByIDAsync(int id)
+		public async Task<Organization?> GetByIDAsync(int id)
 		{
 			string sql = $"SELECT * FROM {TableName} (NOLOCK) where ID = '{id}'";
-			var results = await this.SqlClient.GetData<T>(sql);
+			var results = await this.SqlClient.GetData<Organization>(sql);
 			return results?.FirstOrDefault();
 		}
 
-		public async Task UpdateAsync(T org)
+		public async Task UpdateAsync(Organization org)
 		{
 			await this.SqlClient.UpdateAsync(org);
 		}
 
-		public async Task SetInactiveAsync(T org)
+		public async Task SetInactiveAsync(Organization org)
 		{
 			org.IsActive = false;
 			await this.UpdateAsync(org);
