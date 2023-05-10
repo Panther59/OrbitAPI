@@ -17,6 +17,8 @@ namespace Orbit.Models.OrbitDB
 		[Write(false)]
 		public RoleTypes? RoleType { get; set; }
 		[Write(false)]
+		public string? Email { get; set; }
+		[Write(false)]
 		public string? Organization { get; set; }
 		[Write(false)]
 		public string? Role { get; set; }

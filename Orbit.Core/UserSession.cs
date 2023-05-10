@@ -78,9 +78,7 @@ namespace Orbit.Core
 
 		public bool HasPermission(string role)
 		{
-			bool allow = false;
-			httpContextAccessor.HttpContext.User.HasClaim(ClaimTypes.Role, role);
-			return allow;
+			return httpContextAccessor.HttpContext.User.HasClaim(ClaimTypes.Role, role);
 		}
 
 		public void SetUpdatedAuditColumns(BaseAuditRecord record)

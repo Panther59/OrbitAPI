@@ -29,7 +29,7 @@ try
 	{
 		options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
 		options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-		options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+		options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 	});
 
 	// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -44,14 +44,10 @@ try
 	{
 		x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
 		x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-	}).AddCookie(x =>
-	{
-		x.Cookie.Name = "token";
-
 	}).AddJwtBearer(x =>
 	{
 		x.RequireHttpsMetadata = false;
-		x.SaveToken = true;
+		x.SaveToken = false;
 		x.TokenValidationParameters = new TokenValidationParameters
 		{
 			ValidIssuer = configuration["Jwt:Issuer"],
@@ -66,7 +62,7 @@ try
 		{
 			OnMessageReceived = context =>
 			{
-				context.Token = context.Request.Cookies["X-Access-Token"];
+				//context.Token = context.Request.Headers.Authorization[0].Split(" ")[1];
 				return Task.CompletedTask;
 			}
 		};
