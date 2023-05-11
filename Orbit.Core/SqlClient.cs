@@ -40,6 +40,18 @@ namespace Orbit.Core
 			}
 		}
 
+		public async Task<int?> GetMaxID<T>() where T : class
+		{
+			var type = typeof(T);
+			var tableName = this.TableNameMapper(type);
+
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				var result = await connection.QueryFirstOrDefaultAsync<dynamic>($"SELECT MAX(ID) as ID FROM {tableName} (NOLOCK)");
+				return result?.ID;
+			}
+		}
+
 		public async Task<int?> GetMaxID(string table)
 		{
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
@@ -134,6 +146,28 @@ namespace Orbit.Core
 			}
 
 			return name;
+		}
+
+		public async Task DeleteAsync<T>(T data) where T : class
+		{
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				await connection.DeleteAsync<T>(data);
+			}
+		}
+
+		public async Task DeleteAsync<T>(int id) where T : class
+		{
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				var record = connection.Get<T>(id);
+				if (record == null)
+				{
+					throw new Exception($"Delete was unsuccessful as record with id {id} not available");
+				}
+
+				await connection.DeleteAsync(record);
+			}
 		}
 	}
 }
