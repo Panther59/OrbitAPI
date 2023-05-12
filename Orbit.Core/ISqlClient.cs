@@ -1,4 +1,6 @@
-﻿namespace Orbit.Core
+﻿using Microsoft.Data.SqlClient;
+
+namespace Orbit.Core
 {
 	public interface ISqlClient
 	{
@@ -14,5 +16,6 @@
 		Task UpdateAsync<T>(IEnumerable<T> data) where T : class;
 		Task UpdateAsync<T>(T data) where T : class;
 		string TableNameMapper(Type type);
+		SqlTransaction GetTransaction();
 	}
 }

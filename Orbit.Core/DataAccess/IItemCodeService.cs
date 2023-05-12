@@ -1,4 +1,5 @@
 ﻿using Orbit.Models.OrbitDB;
+using System.Data;
 
 namespace Orbit.Core.DataAccess
 {
@@ -8,5 +9,6 @@ namespace Orbit.Core.DataAccess
 		Task DeleteSegmentAsync(int id);
 		Task<List<ItemCodeSegment>> GetSegmentsAsync(int orgId);
 		Task<ItemCodeSegment> UpdateSegmentAsync(ItemCodeSegment segment);
+		Task<List<string>> ValidateAndAddMappings(DataTable table, int parentId);
 	}
 }

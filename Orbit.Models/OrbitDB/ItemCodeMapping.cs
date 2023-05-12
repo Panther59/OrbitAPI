@@ -6,7 +6,7 @@ namespace Orbit.Models.OrbitDB
 	public class ItemCodeMapping : BaseAuditRecord
 	{
 		[ExplicitKey]
-		public int? ParentStructureID { get; set; }
-		public int? ChildStructureID { get; set; }
+		public int? ParentID { get; set; }
+		public int? ChildID { get; set; }
 	}
 }

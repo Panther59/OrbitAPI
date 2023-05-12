@@ -9,7 +9,7 @@ namespace Orbit.Core
 		string? Picture { get; }
 		List<string>? Permissions { get; }
 		bool HasPermission(string role);
-		void SetUpdatedAuditColumns(BaseAuditRecord record);
-		void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null);
+		void SetUpdatedAuditColumns(BaseAuditRecord record, DateTime? dateTime = null);
+		void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord ? originalRecord = null, DateTime? dateTime = null);
 	}
 }

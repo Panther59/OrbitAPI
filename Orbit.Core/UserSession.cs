@@ -81,15 +81,20 @@ namespace Orbit.Core
 			return httpContextAccessor.HttpContext.User.HasClaim(ClaimTypes.Role, role);
 		}
 
-		public void SetUpdatedAuditColumns(BaseAuditRecord record)
+		public void SetUpdatedAuditColumns(BaseAuditRecord record, DateTime? dateTime = null)
 		{
-			record.UpdatedOn = DateTime.Now;
+			record.UpdatedOn = dateTime ?? DateTime.Now;
 			record.UpdatedBy = this.UserID ?? 1;
 		}
 
-		public void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null)
+		public void SetCreatedAuditColumns(BaseAuditRecord record, DateTime? dateTime = null)
 		{
-			record.CreatedOn = originalRecord?.CreatedOn ?? DateTime.Now;
+			this.SetCreatedAuditColumns(record, null, dateTime);
+		}
+
+		public void SetCreatedAuditColumns(BaseAuditRecord record, BaseAuditRecord? originalRecord = null, DateTime? dateTime = null)
+		{
+			record.CreatedOn = originalRecord?.CreatedOn ?? dateTime ?? DateTime.Now;
 			record.CreatedBy = originalRecord?.CreatedBy ?? this.UserID ?? 1;
 		}
 	}

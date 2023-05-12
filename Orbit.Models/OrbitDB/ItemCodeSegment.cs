@@ -7,6 +7,7 @@ namespace Orbit.Models.OrbitDB
 	{
 		[ExplicitKey]
 		public int? ID { get; set; }
+		public int? ParentID { get; set; }
 		public int? OrganizationID { get; set; }
 		public string Name { get; set; }
 		public int? MaxLength { get; set; }

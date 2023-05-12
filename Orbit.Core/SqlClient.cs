@@ -169,5 +169,11 @@ namespace Orbit.Core
 				await connection.DeleteAsync(record);
 			}
 		}
+
+		public SqlTransaction GetTransaction()
+		{
+			SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB);
+			return connection.BeginTransaction();
+		}
 	}
 }
