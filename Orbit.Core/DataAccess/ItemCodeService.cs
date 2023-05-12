@@ -41,22 +41,7 @@ namespace Orbit.Core.DataAccess
 		public async Task<SegmentDetail> GetItemCodeSegmentDetails(int id)
 		{
 			var segDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ID = {id}";
-
 			SegmentDetail detail = (await this.sqlClient.GetData<SegmentDetail>(segDetailQuery)).FirstOrDefault();
-			//var record = await this.sqlClient.GetDataByID<ItemCodeSegment>(id);
-			//detail = new SegmentDetail
-			//{
-			//	ID = record.ID,
-			//	CreatedBy = record.CreatedBy,
-			//	MaxLength = record.MaxLength,
-			//	CreatedOn = record.CreatedOn,
-			//	Name = record.Name,
-			//	OrganizationID = record.OrganizationID,
-			//	ParentID= record.ParentID,	
-			//	Sequence = record.Sequence,
-			//	UpdatedBy = record.UpdatedBy,
-			//	UpdatedOn = record.UpdatedOn
-			//};
 			var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {id}";
 			var existingChildCodesSql = $"SELECT c.*  FROM tblItemCodeMappings (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id} ";
 			detail.Codes = await this.sqlClient.GetData<ItemCodeDetail>(existingCodesSql);
