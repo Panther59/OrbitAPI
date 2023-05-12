@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Orbit.Core.Exceptions;
 using Orbit.Models.OrbitDB;
 using System.Data;
@@ -73,8 +74,8 @@ namespace Orbit.Core.DataAccess
 			var existingParentCodes = await this.sqlClient.GetData<ItemCode>(existingParentCodesSql);
 			var existingChildCodes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 
-			var existingMappingSql = $"SELECT * FROM {this.itemCodeMappingTableName} WHERE ParentID = {parentSeg.ID} AND ChildID = {childSeg.ID}";
-			var existingMappings = await this.sqlClient.GetData<ItemCodeMapping>(existingChildCodesSql);
+			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {parentSeg.ID} AND c.SegmentID = {childSeg.ID}";
+			var existingMappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 
 			bool validateCodesOnly = false;
 			if (table.Columns.Count == 2)
@@ -104,7 +105,8 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 					continue;
 				}
 
-				if (row[1] == null)
+				if ((validateCodesOnly && (row[1] == null || string.IsNullOrEmpty(row[1].ToString()))) ||
+					(!validateCodesOnly && (row[2] == null || string.IsNullOrEmpty(row[2].ToString()))))
 				{
 					listOfErrors.Add($"Child code is missing on row number {i + 1}");
 					continue;
@@ -115,10 +117,10 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 				var childCodeStr = validateCodesOnly ? row[1].ToString() : row[2].ToString();
 				var childCodeNameStr = !validateCodesOnly ? row[3].ToString() : null;
 
-				var parentCode = existingParentCodes.Find(x => row[0] != null && x.Code.Equals(row[0].ToString(), StringComparison.InvariantCultureIgnoreCase)) ??
-					newParentCodes.Find(x => row[0] != null && x.Code.Equals(row[0].ToString(), StringComparison.InvariantCultureIgnoreCase));
-				var childCode = existingChildCodes.Find(x => row[1] != null && x.Code.Equals(row[1].ToString(), StringComparison.InvariantCultureIgnoreCase)) ??
-					newChildCodes.Find(x => row[1] != null && x.Code.Equals(row[1].ToString(), StringComparison.InvariantCultureIgnoreCase));
+				var parentCode = existingParentCodes.Find(x => !string.IsNullOrEmpty(parentCodeStr) && x.Code.Equals(parentCodeStr, StringComparison.InvariantCultureIgnoreCase)) ??
+					newParentCodes.Find(x => !string.IsNullOrEmpty(parentCodeStr) && x.Code.Equals(parentCodeStr, StringComparison.InvariantCultureIgnoreCase));
+				var childCode = existingChildCodes.Find(x => !string.IsNullOrEmpty(childCodeStr) && x.Code.Equals(childCodeStr, StringComparison.InvariantCultureIgnoreCase)) ??
+					newChildCodes.Find(x => !string.IsNullOrEmpty(childCodeStr) && x.Code.Equals(childCodeStr, StringComparison.InvariantCultureIgnoreCase));
 				if (parentCode == null)
 				{
 					if (validateCodesOnly)
@@ -186,16 +188,23 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 					newMappings.Add(codeMapping);
 				}
 
-				
+
+			}
+
+			var newCodes = new List<ItemCode>();
+			newCodes.AddRange(newParentCodes);
+			newCodes.AddRange(newChildCodes);
+
+			if (listOfErrors.Count > 0 ||
+				(newCodes.Count == 0 && newMappings.Count == 0))
+			{
+				return listOfErrors;
 			}
 
 			using var trans = this.sqlClient.GetTransaction();
 			try
 			{
 				var dateTime = DateTime.Now;
-				var newCodes = new List<ItemCode>();
-				newCodes.AddRange(newParentCodes);
-				newCodes.AddRange(newChildCodes);
 				if (newCodes.Count > 0)
 				{
 					foreach (var rec in newCodes)
