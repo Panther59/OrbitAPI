@@ -173,6 +173,7 @@ namespace Orbit.Core
 		public SqlTransaction GetTransaction()
 		{
 			SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB);
+			connection.Open();
 			return connection.BeginTransaction();
 		}
 	}
