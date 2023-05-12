@@ -7,6 +7,7 @@ namespace Orbit.Core
 		Task<int> ExecuteAsync(string sql);
 		Task<List<T>> GetAllData<T>() where T : class;
 		Task<List<T>> GetData<T>(string query) where T : class;
+		Task<T> GetDataByID<T>(int id) where T : class;
 		Task<int?> GetMaxID<T>() where T : class;
 		Task<int?> GetMaxID(string table);
 		Task DeleteAsync<T>(T data) where T : class;

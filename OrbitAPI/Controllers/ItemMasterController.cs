@@ -6,6 +6,7 @@ using OfficeOpenXml;
 using Orbit.Core;
 using Orbit.Core.DataAccess;
 using Orbit.Core.Exceptions;
+using Orbit.Models.DTOs;
 using Orbit.Models.OrbitDB;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -60,6 +61,14 @@ namespace OrbitAPI.Controllers
 			{
 				throw;
 			}
+
+		}
+
+		[HttpGet("codes/{id}")]
+		public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
+		{
+			var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
+			return result;
 
 		}
 

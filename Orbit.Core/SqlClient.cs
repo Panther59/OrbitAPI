@@ -27,7 +27,17 @@ namespace Orbit.Core
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
 			{
 				var result = await connection.QueryAsync<T>(query);
-				return result.ToList();
+				return result?.ToList();
+			}
+		}
+
+
+
+		public async Task<T> GetDataByID<T>(int id) where T : class
+		{
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				 return await connection.GetAsync<T>(id);
 			}
 		}
 
