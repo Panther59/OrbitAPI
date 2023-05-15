@@ -25,12 +25,28 @@ namespace Orbit.Core.DataAccess
 			this.itemCodeMappingTableName = this.sqlClient.TableNameMapper(typeof(ItemCodeMapping));
 		}
 
+		public async Task<ItemCode> AddItemCodeAsync(ItemCode itemCode)
+		{
+			var maxId = await this.sqlClient.GetMaxID<ItemCode>();
+			itemCode.ID = (maxId ?? 0) + 1;
+			await this.sqlClient.InsertAsync(itemCode);
+			return itemCode;
+		}
+
 		public async Task<ItemCodeSegment> AddNewSegmentAsync(ItemCodeSegment segment)
 		{
 			var maxId = await this.sqlClient.GetMaxID<ItemCodeSegment>();
 			segment.ID = (maxId ?? 0) + 1;
 			await this.sqlClient.InsertAsync(segment);
 			return segment;
+		}
+
+		public async Task DeleteItemCodeAsync(List<ItemCode> items)
+		{
+			var ids = items.Select(x => x.ID);
+			await this.sqlClient.DeleteAsync<ItemCode>(items);
+			var deleteMappingQuery = $"DELETE FROM {this.itemCodeMappingTableName} WHERE ParentID IN ({string.Join(",", ids)}) OR ChildID IN ({string.Join(",", ids)})";
+			await this.sqlClient.ExecuteAsync(deleteMappingQuery);
 		}
 
 		public async Task DeleteMappingsAsync(List<ItemCodeMapping> mappings)
@@ -56,7 +72,7 @@ namespace Orbit.Core.DataAccess
 				SegmentDetail? child = (await this.sqlClient.GetData<SegmentDetail>(segChildDetailQuery)).FirstOrDefault();
 				if (child != null)
 				{
-					var existingChildCodesSql = $"SELECT c.*  FROM tblItemCodeMappings (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id} ";
+					var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {child.ID}";
 					child.Codes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 					detail.ChildSegment = child;
 				}
@@ -82,6 +98,12 @@ namespace Orbit.Core.DataAccess
 		{
 			var sql = $"SELECT * FROM {this.itemCodeSegmentTableName} WHERE OrganizationID = {orgId} ORDER BY Sequence";
 			return this.sqlClient.GetData<ItemCodeSegment>(sql);
+		}
+
+		public async Task<ItemCode> UpdateItemCodeAsync(ItemCode itemCode)
+		{
+			await this.sqlClient.UpdateAsync(itemCode);
+			return itemCode;
 		}
 
 		public async Task<ItemCodeSegment> UpdateSegmentAsync(ItemCodeSegment segment)

@@ -70,13 +70,13 @@ namespace OrbitAPI.Controllers
 			await this.itemCodeService.DeleteMappingsAsync(mappings);
 		}
 
-		[HttpGet("codes/{id}")]
-		public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
-		{
-			var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
-			return result;
+		//[HttpGet("codes/{id}")]
+		//public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
+		//{
+		//	var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
+		//	return result;
 
-		}
+		//}
 
 
 
