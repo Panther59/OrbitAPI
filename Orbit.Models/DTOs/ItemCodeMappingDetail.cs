@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Orbit.Models.DTOs
 {
-	public class ItemCodeMappingDetail : ItemCodeMapping
-	{
-		public ItemCode Parent { get; set; }
-		public ItemCode Child { get; set; }
-	}
+	//public class ItemCodeMappingDetail : ItemCodeMapping
+	//{
+	//	public ItemCode Parent { get; set; }
+	//	public ItemCode Child { get; set; }
+	//}
 }

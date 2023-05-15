@@ -64,6 +64,12 @@ namespace OrbitAPI.Controllers
 
 		}
 
+		[HttpPost("mappings/bulkDelete")]
+		public async Task BulkDeleteMappings(List<ItemCodeMapping> mappings)
+		{
+			await this.itemCodeService.DeleteMappingsAsync(mappings);
+		}
+
 		[HttpGet("codes/{id}")]
 		public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
 		{
@@ -71,6 +77,8 @@ namespace OrbitAPI.Controllers
 			return result;
 
 		}
+
+
 
 		private DataTable GetDataTableFromExcel(IFormFile formFile)
 		{

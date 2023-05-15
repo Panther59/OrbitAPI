@@ -7,6 +7,7 @@ namespace Orbit.Models.OrbitDB
 	{
 		[ExplicitKey]
 		public int? ParentID { get; set; }
+		[ExplicitKey]
 		public int? ChildID { get; set; }
 	}
 }

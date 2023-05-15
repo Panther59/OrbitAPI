@@ -33,6 +33,11 @@ namespace Orbit.Core.DataAccess
 			return segment;
 		}
 
+		public async Task DeleteMappingsAsync(List<ItemCodeMapping> mappings)
+		{
+			await this.sqlClient.DeleteAsync(mappings);
+		}
+
 		public async Task DeleteSegmentAsync(int id)
 		{
 			await this.sqlClient.DeleteAsync<ItemCodeSegment>(id);
@@ -41,21 +46,33 @@ namespace Orbit.Core.DataAccess
 		public async Task<SegmentDetail> GetItemCodeSegmentDetails(int id)
 		{
 			var segDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ID = {id}";
-			SegmentDetail detail = (await this.sqlClient.GetData<SegmentDetail>(segDetailQuery)).FirstOrDefault();
-			var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {id}";
-			var existingChildCodesSql = $"SELECT c.*  FROM tblItemCodeMappings (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id} ";
-			detail.Codes = await this.sqlClient.GetData<ItemCodeDetail>(existingCodesSql);
-			var childCodes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
-			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id}";
-			var childMappings = await this.sqlClient.GetData<ItemCodeMappingDetail>(existingMappingSql);
-			foreach (var childMap in childMappings)
+			SegmentDetail? detail = (await this.sqlClient.GetData<SegmentDetail>(segDetailQuery)).FirstOrDefault();
+			if (detail != null)
 			{
-				childMap.Child = childCodes?.Find(x => x.ID == childMap.ChildID);
-			}
+				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {id}";
+				detail.Codes = await this.sqlClient.GetData<ItemCode>(existingCodesSql);
 
-			foreach (var code in detail.Codes)
-			{
-				code.Children = childMappings.Where(x => x.ParentID == code.ID && x.Child != null).Select(x => x.Child).ToList();
+				var segChildDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ParentID = {id}";
+				SegmentDetail? child = (await this.sqlClient.GetData<SegmentDetail>(segChildDetailQuery)).FirstOrDefault();
+				if (child != null)
+				{
+					var existingChildCodesSql = $"SELECT c.*  FROM tblItemCodeMappings (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id} ";
+					child.Codes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
+					detail.ChildSegment = child;
+				}
+
+				if (detail.ParentID != null)
+				{
+					var segparentDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ID = {detail.ParentID}";
+					SegmentDetail? parent = (await this.sqlClient.GetData<SegmentDetail>(segparentDetailQuery)).FirstOrDefault();
+					if (parent != null)
+					{
+						detail.ParentSegment = parent;
+					}
+				}
+
+				var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id}";
+				detail.Mappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 			}
 
 			return detail;

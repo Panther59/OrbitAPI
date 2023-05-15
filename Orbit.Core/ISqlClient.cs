@@ -10,6 +10,7 @@ namespace Orbit.Core
 		Task<T> GetDataByID<T>(int id) where T : class;
 		Task<int?> GetMaxID<T>() where T : class;
 		Task<int?> GetMaxID(string table);
+		Task DeleteAsync<T>(List<T> data) where T : class;
 		Task DeleteAsync<T>(T data) where T : class;
 		Task DeleteAsync<T>(int id) where T : class;
 		Task InsertAsync<T>(IEnumerable<T> data) where T : class;

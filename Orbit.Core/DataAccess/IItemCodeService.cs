@@ -7,6 +7,7 @@ namespace Orbit.Core.DataAccess
 	public interface IItemCodeService
 	{
 		Task<ItemCodeSegment> AddNewSegmentAsync(ItemCodeSegment segment);
+		Task DeleteMappingsAsync(List<ItemCodeMapping> mappings);
 		Task DeleteSegmentAsync(int id);
 		Task<SegmentDetail> GetItemCodeSegmentDetails(int id);
 		Task<List<ItemCodeSegment>> GetSegmentsAsync(int orgId);

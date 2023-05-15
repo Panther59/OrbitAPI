@@ -9,6 +9,5 @@ namespace Orbit.Models.DTOs
 {
 	public class ItemCodeDetail : ItemCode
 	{
-		public List<ItemCode> Children { get; set; }
 	}
 }

@@ -31,13 +31,11 @@ namespace Orbit.Core
 			}
 		}
 
-
-
 		public async Task<T> GetDataByID<T>(int id) where T : class
 		{
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
 			{
-				 return await connection.GetAsync<T>(id);
+				return await connection.GetAsync<T>(id);
 			}
 		}
 
@@ -163,6 +161,43 @@ namespace Orbit.Core
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
 			{
 				await connection.DeleteAsync<T>(data);
+			}
+		}
+
+		public async Task DeleteAsync<T>(List<T> data) where T : class
+		{
+			if (data == null || data.Count == 0)
+			{
+				return;
+			}
+			else if (data.Count == 1)
+			{
+				await this.DeleteAsync<T>(data.First());
+				return;
+			}
+
+			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
+			{
+				await connection.OpenAsync();
+				using var transaction = await connection.BeginTransactionAsync();
+				try
+				{
+					foreach (var rec in data)
+					{
+						await connection.DeleteAsync<T>(rec, transaction);
+					}
+					await transaction.CommitAsync();
+				}
+				catch (Exception)
+				{
+					await transaction.RollbackAsync();
+					throw;
+				}
+				finally
+				{
+					transaction.Dispose();
+					await connection.CloseAsync();
+				}
 			}
 		}
 

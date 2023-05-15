@@ -9,6 +9,9 @@ namespace Orbit.Models.DTOs
 {
 	public class SegmentDetail : ItemCodeSegment
 	{
-		public List<ItemCodeDetail> Codes { get; set; }
+		public List<ItemCode> Codes { get; set; }
+		public SegmentDetail ParentSegment { get; set; }
+		public ItemCodeSegment ChildSegment { get; set; }
+		public List<ItemCodeMapping> Mappings { get; set; }
 	}
 }
