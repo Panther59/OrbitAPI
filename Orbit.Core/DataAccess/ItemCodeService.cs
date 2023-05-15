@@ -59,16 +59,27 @@ namespace Orbit.Core.DataAccess
 			await this.sqlClient.DeleteAsync<ItemCodeSegment>(id);
 		}
 
-		public async Task<SegmentDetail> GetItemCodeSegmentDetails(int id)
+		public Task<SegmentDetail> GetItemCodeSegmentDetails(string name)
+		{
+			var segDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE Name = '{name}'";
+			return this.GetItemCodeSegmentDetailsByQuery(segDetailQuery);
+		}
+
+		public Task<SegmentDetail> GetItemCodeSegmentDetails(int id)
 		{
 			var segDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ID = {id}";
-			SegmentDetail? detail = (await this.sqlClient.GetData<SegmentDetail>(segDetailQuery)).FirstOrDefault();
+			return this.GetItemCodeSegmentDetailsByQuery(segDetailQuery);
+		}
+
+		private async Task<SegmentDetail> GetItemCodeSegmentDetailsByQuery(string query)
+		{
+			SegmentDetail? detail = (await this.sqlClient.GetData<SegmentDetail>(query)).FirstOrDefault();
 			if (detail != null)
 			{
-				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {id}";
+				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {detail.ID}";
 				detail.Codes = await this.sqlClient.GetData<ItemCode>(existingCodesSql);
 
-				var segChildDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ParentID = {id}";
+				var segChildDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ParentID = {detail.ID}";
 				SegmentDetail? child = (await this.sqlClient.GetData<SegmentDetail>(segChildDetailQuery)).FirstOrDefault();
 				if (child != null)
 				{
@@ -87,7 +98,7 @@ namespace Orbit.Core.DataAccess
 					}
 				}
 
-				var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {id}";
+				var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {detail.ID}";
 				detail.Mappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 			}
 

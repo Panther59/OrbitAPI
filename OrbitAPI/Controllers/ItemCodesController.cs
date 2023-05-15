@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Orbit.Core;
 using Orbit.Core.DataAccess;
@@ -23,11 +24,19 @@ namespace OrbitAPI.Controllers
 			this.userSession = userSession;
 		}
 
-		[HttpGet("{id}")]
-		public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
+		[HttpGet("{identifier}")]
+		public async Task<SegmentDetail> GetSegmentCodeDetails(string identifier)
 		{
-			var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
-			return result;
+			if (int.TryParse(identifier, out var id))
+			{
+				var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
+				return result;
+			}
+			else
+			{
+				var result = await this.itemCodeService.GetItemCodeSegmentDetails(identifier);
+				return result;
+			}
 
 		}
 

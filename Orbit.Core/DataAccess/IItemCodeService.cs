@@ -12,6 +12,7 @@ namespace Orbit.Core.DataAccess
 		Task DeleteMappingsAsync(List<ItemCodeMapping> mappings);
 		Task DeleteSegmentAsync(int id);
 		Task<SegmentDetail> GetItemCodeSegmentDetails(int id);
+		Task<SegmentDetail> GetItemCodeSegmentDetails(string name);
 		Task<List<ItemCodeSegment>> GetSegmentsAsync(int orgId);
 		Task<ItemCode> UpdateItemCodeAsync(ItemCode itemCode);
 		Task<ItemCodeSegment> UpdateSegmentAsync(ItemCodeSegment segment);
