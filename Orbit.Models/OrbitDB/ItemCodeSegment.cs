@@ -12,5 +12,8 @@ namespace Orbit.Models.OrbitDB
 		public string Name { get; set; }
 		public int? MaxLength { get; set; }
 		public int? Sequence { get; set; }
+		public bool? IsLinkedCodeList { get; set; }
+		public int? ItemCodeListID { get; set; }
+		
 	}
 }

@@ -2,7 +2,6 @@
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OfficeOpenXml;
 using Orbit.Core;
 using Orbit.Core.DataAccess;
 using Orbit.Core.Exceptions;
@@ -39,86 +38,6 @@ namespace OrbitAPI.Controllers
 			}
 
 			return await this.itemCodeService.GetSegmentsAsync(this.userSession.Organization.ID.Value);
-		}
-
-		[HttpPost("mappings/{parentId}"), DisableRequestSizeLimit]
-		public async Task<List<string>> UploadMappingsExcel(int parentId)
-		{
-			var formCollection = await Request.ReadFormAsync();
-			var files = formCollection.Files;
-			try
-			{
-				var table = this.GetDataTableFromExcel(files.First());
-				var results = await this.itemCodeService.ValidateAndAddMappings(table, parentId);
-				return results;
-			}
-			catch (ValidationException ve)
-			{
-				var result = new List<string>() { ve.Message.ToString() };
-				return result;
-			}
-			catch (Exception)
-			{
-				throw;
-			}
-
-		}
-
-		[HttpPost("mappings/bulkDelete")]
-		public async Task BulkDeleteMappings(List<ItemCodeMapping> mappings)
-		{
-			await this.itemCodeService.DeleteMappingsAsync(mappings);
-		}
-
-		//[HttpGet("codes/{id}")]
-		//public async Task<SegmentDetail> GetSegmentCodeDetails(int id)
-		//{
-		//	var result = await this.itemCodeService.GetItemCodeSegmentDetails(id);
-		//	return result;
-
-		//}
-
-
-
-		private DataTable GetDataTableFromExcel(IFormFile formFile)
-		{
-			if (formFile.FileName.Split('.').Last() != "xls" && formFile.FileName.Split('.').Last() != "xlsx")
-				throw new ValidationException("Please send an excel file to upload");
-
-			var ms = new MemoryStream();
-			formFile.CopyTo(ms);
-
-			ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-			using (ExcelPackage package = new ExcelPackage(ms))
-			{
-				ExcelWorksheet sheet = package.Workbook.Worksheets[0];
-				DataTable table = new DataTable();
-
-				using (ExcelWorksheet workSheet = package.Workbook.Worksheets.First())
-				{
-					int noOfCol = workSheet.Dimension.End.Column;
-					int noOfRow = workSheet.Dimension.End.Row;
-					int rowIndex = 1;
-
-					for (int c = 1; c <= noOfCol; c++)
-					{
-						table.Columns.Add(workSheet.Cells[rowIndex, c].Text);
-					}
-					rowIndex = 2;
-					for (int r = rowIndex; r <= noOfRow; r++)
-					{
-						DataRow dr = table.NewRow();
-						for (int c = 1; c <= noOfCol; c++)
-						{
-							dr[c - 1] = workSheet.Cells[r, c].Value;
-						}
-						table.Rows.Add(dr);
-					}
-				}
-
-				return table;
-			}
-
 		}
 
 		[HttpGet("segments/{id}")]

@@ -27,10 +27,31 @@ namespace Orbit.Core.DataAccess
 
 		public async Task<ItemCode> AddItemCodeAsync(ItemCode itemCode)
 		{
-			var maxId = await this.sqlClient.GetMaxID<ItemCode>();
-			itemCode.ID = (maxId ?? 0) + 1;
-			await this.sqlClient.InsertAsync(itemCode);
-			return itemCode;
+			var existingCodeQuery = $"SELECT * FROM tblItemCodes WHERE Code = '{itemCode.Code}' AND ListID = {itemCode.ListID}";
+			var existingCodes = await this.sqlClient.GetData<ItemCode>(existingCodeQuery);
+			if (existingCodes != null && existingCodes.Count > 0)
+			{
+				if (!existingCodes[0].IsActive)
+				{
+					itemCode.CreatedOn = existingCodes[0].CreatedOn;
+					itemCode.CreatedBy = existingCodes[0].CreatedBy;
+					itemCode.IsActive = true;
+					await this.sqlClient.UpdateAsync(itemCode);
+					return itemCode;
+				}
+				else
+				{
+					return existingCodes[0];
+				}
+			}
+			else
+			{
+				var maxId = await this.sqlClient.GetMaxID<ItemCode>();
+				itemCode.ID = (maxId ?? 0) + 1;
+				itemCode.IsActive = true;
+				await this.sqlClient.InsertAsync(itemCode);
+				return itemCode;
+			}
 		}
 
 		public async Task<ItemCodeSegment> AddNewSegmentAsync(ItemCodeSegment segment)
@@ -44,7 +65,12 @@ namespace Orbit.Core.DataAccess
 		public async Task DeleteItemCodeAsync(List<ItemCode> items)
 		{
 			var ids = items.Select(x => x.ID);
-			await this.sqlClient.DeleteAsync<ItemCode>(items);
+			foreach (var item in items)
+			{
+				item.IsActive = false;
+			}
+
+			await this.sqlClient.UpdateAsync<ItemCode>(items);
 			var deleteMappingQuery = $"DELETE FROM {this.itemCodeMappingTableName} WHERE ParentID IN ({string.Join(",", ids)}) OR ChildID IN ({string.Join(",", ids)})";
 			await this.sqlClient.ExecuteAsync(deleteMappingQuery);
 		}
@@ -76,14 +102,14 @@ namespace Orbit.Core.DataAccess
 			SegmentDetail? detail = (await this.sqlClient.GetData<SegmentDetail>(query)).FirstOrDefault();
 			if (detail != null)
 			{
-				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {detail.ID}";
+				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {detail.ItemCodeListID}";
 				detail.Codes = await this.sqlClient.GetData<ItemCode>(existingCodesSql);
 
 				var segChildDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ParentID = {detail.ID}";
 				SegmentDetail? child = (await this.sqlClient.GetData<SegmentDetail>(segChildDetailQuery)).FirstOrDefault();
 				if (child != null)
 				{
-					var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {child.ID}";
+					var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {child.ItemCodeListID}";
 					child.Codes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 					detail.ChildSegment = child;
 				}
@@ -98,7 +124,7 @@ namespace Orbit.Core.DataAccess
 					}
 				}
 
-				var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {detail.ID}";
+				var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.ListID = {detail.ItemCodeListID}";
 				detail.Mappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 			}
 
@@ -142,13 +168,13 @@ namespace Orbit.Core.DataAccess
 				throw new BadRequestException("Unable to get code segment detail for child segment");
 			}
 
-			var existingParentCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {parentSeg.ID}";
-			var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE SegmentID = {childSeg.ID}";
+			var existingParentCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {parentSeg.ItemCodeListID}";
+			var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {childSeg.ItemCodeListID}";
 
 			var existingParentCodes = await this.sqlClient.GetData<ItemCode>(existingParentCodesSql);
 			var existingChildCodes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 
-			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.SegmentID = {parentSeg.ID} AND c.SegmentID = {childSeg.ID}";
+			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.ListID = {parentSeg.ItemCodeListID} AND c.ListID = {childSeg.ItemCodeListID}";
 			var existingMappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 
 			bool validateCodesOnly = false;
@@ -214,7 +240,7 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 						{
 							ID = ++maxItemCodeId,
 							Code = parentCodeStr,
-							SegmentID = parentSeg.ID,
+							ListID = parentSeg.ItemCodeListID,
 							Name = parentCodeNameStr
 						};
 
@@ -241,7 +267,7 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 						{
 							ID = ++maxItemCodeId,
 							Code = childCodeStr,
-							SegmentID = childSeg.ID,
+							ListID = childSeg.ItemCodeListID,
 							Name = childCodeNameStr
 						};
 
@@ -313,6 +339,34 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 			}
 
 			return listOfErrors;
+		}
+
+		public Task<List<ItemCodeList>> GetItemCodeListsAsync()
+		{
+			return this.sqlClient.GetAllData<ItemCodeList>();
+		}
+
+		public async Task<ItemCodeList> CreateItemCodeListsAsync(ItemCodeList code)
+		{
+			var maxId = await this.sqlClient.GetMaxID<ItemCodeList>();
+			code.ID = (maxId ?? 0) + 1;
+			await this.sqlClient.InsertAsync(code);
+			return code;
+		}
+
+		public Task<List<ItemCode>> GetItemCodesAsync(int listId, int? parentId)
+		{
+			if (parentId.HasValue)
+			{
+				var existingMappingSql = $"SELECT c.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID AND m.ParentID = {parentId} WHERE c.ListID = {listId}";
+				return this.sqlClient.GetData<ItemCode>(existingMappingSql);
+			}
+			else
+			{
+				var existingMappingSql = $"SELECT c.* FROM tblItemCodes (NOLOCK) c WHERE c.ListID = {listId}";
+				return this.sqlClient.GetData<ItemCode>(existingMappingSql);
+			}
+
 		}
 	}
 }

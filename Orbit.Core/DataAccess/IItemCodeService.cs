@@ -8,9 +8,12 @@ namespace Orbit.Core.DataAccess
 	{
 		Task<ItemCode> AddItemCodeAsync(ItemCode itemCode);
 		Task<ItemCodeSegment> AddNewSegmentAsync(ItemCodeSegment segment);
+		Task<ItemCodeList> CreateItemCodeListsAsync(ItemCodeList code);
 		Task DeleteItemCodeAsync(List<ItemCode> items);
 		Task DeleteMappingsAsync(List<ItemCodeMapping> mappings);
 		Task DeleteSegmentAsync(int id);
+		Task<List<ItemCodeList>> GetItemCodeListsAsync();
+		Task<List<ItemCode>> GetItemCodesAsync(int listId, int? parentCode);
 		Task<SegmentDetail> GetItemCodeSegmentDetails(int id);
 		Task<SegmentDetail> GetItemCodeSegmentDetails(string name);
 		Task<List<ItemCodeSegment>> GetSegmentsAsync(int orgId);

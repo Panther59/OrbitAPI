@@ -9,6 +9,7 @@ namespace Orbit.Models.OrbitDB
 		public int? ID { get; set; }
 		public string Code { get; set; }
 		public string Name { get; set; }
-		public int? SegmentID { get; set; }
+		public int? ListID { get; set; }
+		public bool IsActive { get; set; }
 	}
 }
