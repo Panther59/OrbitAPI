@@ -33,6 +33,7 @@ namespace Orbit.Core.DataAccess
 			{
 				if (!existingCodes[0].IsActive)
 				{
+					itemCode.ID = existingCodes[0].ID;
 					itemCode.CreatedOn = existingCodes[0].CreatedOn;
 					itemCode.CreatedBy = existingCodes[0].CreatedBy;
 					itemCode.IsActive = true;
@@ -102,14 +103,14 @@ namespace Orbit.Core.DataAccess
 			SegmentDetail? detail = (await this.sqlClient.GetData<SegmentDetail>(query)).FirstOrDefault();
 			if (detail != null)
 			{
-				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {detail.ItemCodeListID}";
+				var existingCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {detail.ItemCodeListID} AND IsActive = 1";
 				detail.Codes = await this.sqlClient.GetData<ItemCode>(existingCodesSql);
 
 				var segChildDetailQuery = $"SELECT * FROM {itemCodeSegmentTableName} WHERE ParentID = {detail.ID}";
 				SegmentDetail? child = (await this.sqlClient.GetData<SegmentDetail>(segChildDetailQuery)).FirstOrDefault();
 				if (child != null)
 				{
-					var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {child.ItemCodeListID}";
+					var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {child.ItemCodeListID} AND IsActive = 1";
 					child.Codes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 					detail.ChildSegment = child;
 				}
@@ -168,13 +169,13 @@ namespace Orbit.Core.DataAccess
 				throw new BadRequestException("Unable to get code segment detail for child segment");
 			}
 
-			var existingParentCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {parentSeg.ItemCodeListID}";
-			var existingChildCodesSql = $"SELECT * FROM tblItemCodes WHERE ListID = {childSeg.ItemCodeListID}";
+			var existingParentCodesSql = $"SELECT * FROM tblItemCodes (NOLOCK) WHERE ListID = {parentSeg.ItemCodeListID} AND IsActive = 1";
+			var existingChildCodesSql = $"SELECT * FROM tblItemCodes (NOLOCK) WHERE ListID = {childSeg.ItemCodeListID} AND IsActive = 1";
 
 			var existingParentCodes = await this.sqlClient.GetData<ItemCode>(existingParentCodesSql);
 			var existingChildCodes = await this.sqlClient.GetData<ItemCode>(existingChildCodesSql);
 
-			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.ListID = {parentSeg.ItemCodeListID} AND c.ListID = {childSeg.ItemCodeListID}";
+			var existingMappingSql = $"SELECT m.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) p on p.ID = m.ParentID INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID  WHERE p.ListID = {parentSeg.ItemCodeListID} AND p.IsActive = 1 AND c.ListID = {childSeg.ItemCodeListID} AND c.IsActive = 1";
 			var existingMappings = await this.sqlClient.GetData<ItemCodeMapping>(existingMappingSql);
 
 			bool validateCodesOnly = false;
@@ -358,12 +359,12 @@ Option 2: Excel with 2 columns namely ParentCode,ParentDescription,ChildCode,Chi
 		{
 			if (parentId.HasValue)
 			{
-				var existingMappingSql = $"SELECT c.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID AND m.ParentID = {parentId} WHERE c.ListID = {listId}";
+				var existingMappingSql = $"SELECT c.*  FROM {this.itemCodeMappingTableName} (NOLOCK) m INNER join tblItemCodes (NOLOCK) c on c.ID = m.ChildID AND m.ParentID = {parentId} WHERE c.ListID = {listId} AND c.IsActive = 1";
 				return this.sqlClient.GetData<ItemCode>(existingMappingSql);
 			}
 			else
 			{
-				var existingMappingSql = $"SELECT c.* FROM tblItemCodes (NOLOCK) c WHERE c.ListID = {listId}";
+				var existingMappingSql = $"SELECT c.* FROM tblItemCodes (NOLOCK) c WHERE c.ListID = {listId} AND IsActive = 1";
 				return this.sqlClient.GetData<ItemCode>(existingMappingSql);
 			}
 

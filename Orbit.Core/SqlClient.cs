@@ -112,8 +112,15 @@ namespace Orbit.Core
 
 		public async Task UpdateAsync<T>(IEnumerable<T> data) where T : class
 		{
+			if (data != null && data.Count() == 1)
+			{
+				await this.UpdateAsync<T>(data.First());
+				return;
+			}
+
 			using (SqlConnection connection = new SqlConnection(this.connectionStrings.OrbitDB))
 			{
+				await connection.OpenAsync();
 				using (SqlTransaction transaction = connection.BeginTransaction())
 				{
 					try
